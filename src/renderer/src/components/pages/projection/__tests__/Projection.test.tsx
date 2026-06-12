@@ -324,6 +324,21 @@ describe('Projection page', () => {
     expect(graph.querySelectorAll('filter').length).toBeGreaterThanOrEqual(2)
   })
 
+  test('renders ambient split graph live labels like the round dashboard', async () => {
+    render(<Projection {...baseProps()} />)
+
+    act(() => {
+      telemetryCb?.({ ambientC: 22.2, piCpuC: 50.4 })
+    })
+
+    fireEvent.click(screen.getByText('72\u00b0'))
+
+    const graph = screen.getByTestId('projection-metric-graph')
+    expect(graph).toHaveTextContent('AMBIENT')
+    expect(graph).toHaveTextContent('PI CPU')
+    expect(graph).toHaveTextContent('\u25cf LIVE')
+  })
+
   test('long-pressing graph close opens quit confirmation', async () => {
     jest.useFakeTimers()
 

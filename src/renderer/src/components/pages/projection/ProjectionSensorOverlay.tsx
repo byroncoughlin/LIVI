@@ -1730,7 +1730,7 @@ function GraphPane({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: 3, color: cfg.color, fontFamily: 'monospace' }}>{cfg.label}</span>
           {isLive ? (
-            <span style={{ fontSize: 15, color: '#5fd0ff', fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>LIVE</span>
+            <span style={{ fontSize: 15, color: '#5fd0ff', fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>{'\u25cf LIVE'}</span>
           ) : (
             <span style={{ fontSize: 15, color: '#fff', fontWeight: 700, letterSpacing: 1, fontFamily: 'monospace' }}>{Math.round(viewOffset / 60000)}m ago</span>
           )}
@@ -1765,7 +1765,7 @@ function GraphPane({
         <div style={{ fontSize: 20, color: '#fff', fontWeight: 800, fontFamily: 'monospace', textAlign: 'right', lineHeight: 1.35 }}>
           {visMax !== null && <div>MAX {cfg.fmtVal(visMax)}</div>}
           {visMin !== null && <div>MIN {cfg.fmtVal(visMin)}</div>}
-          {!compact && <div style={{ fontSize: 14, color: '#e0e0e0', fontWeight: 700, marginTop: 4 }}>{data.length} pts</div>}
+          {!compact && <div style={{ fontSize: 14, color: '#e0e0e0', fontWeight: 700, marginTop: 4 }}>{`${data.length} pts \u00b7 drag \u2190 \u2192`}</div>}
         </div>
       </div>
       <svg
