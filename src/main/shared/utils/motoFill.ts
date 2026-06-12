@@ -11,7 +11,7 @@ export function normalizeMotoFillColor(value?: string): string {
 }
 
 export function motoFillEnabled(cfg: MotoFillConfig): boolean {
-  return cfg.backdropEnabled === true || cfg.ambientFillEnabled === true
+  return cfg.ambientFillEnabled === true
 }
 
 export function motoFillHex(cfg: MotoFillConfig): string | undefined {

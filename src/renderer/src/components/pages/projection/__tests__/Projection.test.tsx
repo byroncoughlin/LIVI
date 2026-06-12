@@ -625,6 +625,9 @@ describe('Projection page', () => {
     )
 
     expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+    expect(screen.getByTestId('view-area-mask-top')).toHaveStyle({
+      backgroundColor: '#20364a'
+    })
     expect(screen.getByTestId('view-area-corner-mask-top-left')).toHaveStyle({
       top: '14.75%',
       left: '14.75%'
@@ -632,6 +635,30 @@ describe('Projection page', () => {
     expect(screen.getByTestId('view-area-corner-mask-top-left').style.background).toContain(
       '#20364a'
     )
+  })
+
+  test('lets the dynamic backdrop show outside the view area while keeping corner masks', () => {
+    render(
+      <Projection
+        {...baseProps({
+          receivingVideo: true,
+          settings: {
+            ...baseProps().settings,
+            projectionWidth: 800,
+            projectionHeight: 800,
+            projectionViewAreaTop: 118,
+            projectionViewAreaBottom: 118,
+            projectionViewAreaLeft: 118,
+            projectionViewAreaRight: 118,
+            backdropEnabled: true,
+            roundedCornerMaskEnabled: true
+          }
+        })}
+      />
+    )
+
+    expect(screen.queryByTestId('view-area-mask-top')).not.toBeInTheDocument()
+    expect(screen.getByTestId('view-area-corner-mask-top-left')).toBeInTheDocument()
   })
 
   test('hides waiting pane when video frames are present', () => {

@@ -14,7 +14,8 @@ export function ViewAreaMask({
   displayHeight,
   visible,
   color,
-  cornerMask
+  cornerMask,
+  barsVisible = true
 }: {
   insets: ViewAreaInsets
   displayWidth: number
@@ -22,6 +23,7 @@ export function ViewAreaMask({
   visible: boolean
   color?: string
   cornerMask?: boolean
+  barsVisible?: boolean
 }) {
   const theme = useTheme()
   if (
@@ -65,14 +67,26 @@ export function ViewAreaMask({
 
   return (
     <>
-      <div style={{ ...bar, top: 0, left: 0, right: 0, height: centerTop }} />
-      <div
-        style={{ ...bar, bottom: 0, left: 0, right: 0, height: centerBottom }}
-      />
-      <div style={{ ...bar, top: 0, bottom: 0, left: 0, width: centerLeft }} />
-      <div
-        style={{ ...bar, top: 0, bottom: 0, right: 0, width: centerRight }}
-      />
+      {barsVisible && (
+        <>
+          <div
+            data-testid="view-area-mask-top"
+            style={{ ...bar, top: 0, left: 0, right: 0, height: centerTop }}
+          />
+          <div
+            data-testid="view-area-mask-bottom"
+            style={{ ...bar, bottom: 0, left: 0, right: 0, height: centerBottom }}
+          />
+          <div
+            data-testid="view-area-mask-left"
+            style={{ ...bar, top: 0, bottom: 0, left: 0, width: centerLeft }}
+          />
+          <div
+            data-testid="view-area-mask-right"
+            style={{ ...bar, top: 0, bottom: 0, right: 0, width: centerRight }}
+          />
+        </>
+      )}
       {cornerMask && radius > 0 && (
         <>
           <div

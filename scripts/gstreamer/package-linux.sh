@@ -304,6 +304,8 @@ plugins=(
   # video parse + scale + GL sink (cross-platform)
   libgstvideoparsersbad.so
   libgstvideoconvertscale.so
+  libgstcompositor.so
+  libgstvideorate.so
   libgstopengl.so
 )
 
@@ -318,6 +320,8 @@ optional_plugins=(
   libgstkms.so           # kmssink (DRM overlay plane, kiosk)
   libgstva.so            # vah264dec/vah265dec (x86 VA-API)
   libgstwaylandsink.so   # waylandsink (wlroots/cage)
+  libgstvideocrop.so     # dynamic moto backdrop foreground crop
+  libgstgaudieffects.so  # gaussianblur for dynamic moto backdrop
 )
 
 for plugin in "${optional_plugins[@]}"; do

@@ -1087,6 +1087,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
   const visibleHeight = aaContent?.contentHeight ?? resolvedNegotiatedHeight
   const fillEnabled = motoFillEnabled(settings)
   const maskColor = motoFillHex(settings)
+  const dynamicBackdrop = settings.backdropEnabled === true
   const roundedCornerMask = settings.roundedCornerMaskEnabled === true
 
   const touchHandlers = useProjectionMultiTouch(
@@ -1162,6 +1163,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
         }}
         color={maskColor}
         cornerMask={roundedCornerMask}
+        barsVisible={!dynamicBackdrop}
       />
 
       <ProjectionSensorOverlay />

@@ -23,7 +23,12 @@ import {
 } from '../../audio/AudioDeviceEnumerator'
 import { StatusFileWriter } from '../../status/StatusFileWriter'
 import { isCarlinkitDongle } from '../../usb/constants'
-import { GstVideo, type GstVideoCodec, probeGstCodecs } from '../../video/GstVideo'
+import {
+  GstVideo,
+  type GstVideoCodec,
+  type GstVideoOptions,
+  probeGstCodecs
+} from '../../video/GstVideo'
 import { AaBtSockClient } from '../driver/aa/AaBtSockClient'
 import { AaBluetoothSupervisor } from '../driver/aa/aaBluetoothSupervisor'
 import { AaDriver } from '../driver/aa/aaDriver'
@@ -241,6 +246,8 @@ export class ProjectionService {
     const prevClusterActive = isClusterDisplayed(prev)
     const nextClusterActive = isClusterDisplayed(this.config)
     const clusterToggled = prevClusterActive !== nextClusterActive
+    const mainVideoDisplayModeChanged =
+      this.mainGstVideoOptionsKey(prev) !== this.mainGstVideoOptionsKey(this.config)
 
     if (clusterToggled && !nextClusterActive) {
       this.clusterRequested = false
@@ -258,6 +265,10 @@ export class ProjectionService {
       }
     }
     this.syncClusterStreamFocus()
+
+    if (mainVideoDisplayModeChanged) {
+      this.recreateMainGstVideo()
+    }
 
     // Seed AA's initial NIGHT_MODE
     if (next.appearanceMode !== prev?.appearanceMode) {
@@ -287,6 +298,37 @@ export class ProjectionService {
       if (outChanged) this.systemSound.onDeviceChanged()
       this.connectConfiguredAudioDevices().catch(() => {})
     }
+  }
+
+  private mainGstVideoOptions(cfg: Config = this.config): GstVideoOptions {
+    return {
+      dynamicBackdrop: cfg.backdropEnabled === true,
+      displayWidth: cfg.projectionWidth ?? 0,
+      displayHeight: cfg.projectionHeight ?? 0,
+      viewAreaTop: cfg.projectionViewAreaTop ?? 0,
+      viewAreaBottom: cfg.projectionViewAreaBottom ?? 0,
+      viewAreaLeft: cfg.projectionViewAreaLeft ?? 0,
+      viewAreaRight: cfg.projectionViewAreaRight ?? 0
+    }
+  }
+
+  private mainGstVideoOptionsKey(cfg: Config): string {
+    const opts = this.mainGstVideoOptions(cfg)
+    return [
+      opts.dynamicBackdrop === true ? 1 : 0,
+      opts.displayWidth ?? 0,
+      opts.displayHeight ?? 0,
+      opts.viewAreaTop ?? 0,
+      opts.viewAreaBottom ?? 0,
+      opts.viewAreaLeft ?? 0,
+      opts.viewAreaRight ?? 0
+    ].join(':')
+  }
+
+  private recreateMainGstVideo(): void {
+    if (!this.gstVideo) return
+    this.gstVideo.dispose()
+    this.gstVideo = null
   }
 
   private syncAaBtSupervisor(): void {
@@ -867,7 +909,7 @@ export class ProjectionService {
     const wc = this.webContents
     if (!wc || wc.isDestroyed?.()) return
     if (!this.gstVideo) {
-      this.gstVideo = new GstVideo(wc)
+      this.gstVideo = new GstVideo(wc, 'main', 'main', this.mainGstVideoOptions())
       this.gstVideo.setVisible(this.gstVideoVisible)
       this.applyVideoCrop()
     }

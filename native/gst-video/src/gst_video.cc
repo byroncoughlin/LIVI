@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 #include <initializer_list>
 #include <string>
 #ifdef __linux__
@@ -49,6 +50,22 @@ struct Player {
   GstElement* appsrc = nullptr;
   GstElement* sink = nullptr;
   void* view = nullptr;
+};
+
+struct PlayerOptions {
+  bool dynamic_backdrop = false;
+  int display_w = 0;
+  int display_h = 0;
+  int view_t = 0;
+  int view_b = 0;
+  int view_l = 0;
+  int view_r = 0;
+  int crop_l = 0;
+  int crop_t = 0;
+  int vis_w = 0;
+  int vis_h = 0;
+  int tier_w = 0;
+  int tier_h = 0;
 };
 
 static void ensure_init() {
@@ -282,6 +299,64 @@ static std::string caps_for(const std::string& c) {
   return "video/x-h264,stream-format=byte-stream";
 }
 
+static int clamp_i(int v, int lo, int hi) {
+  return std::max(lo, std::min(v, hi));
+}
+
+static int round_even_i(int v) {
+  return std::max(2, v & ~1);
+}
+
+static std::string crop_chain(int left, int top, int right, int bottom) {
+  left = std::max(0, left);
+  top = std::max(0, top);
+  right = std::max(0, right);
+  bottom = std::max(0, bottom);
+  if (left == 0 && top == 0 && right == 0 && bottom == 0) return "";
+  return "videocrop left=" + std::to_string(left) +
+    " top=" + std::to_string(top) +
+    " right=" + std::to_string(right) +
+    " bottom=" + std::to_string(bottom) + " ! ";
+}
+
+static void parse_player_options(const std::string& s, PlayerOptions* opt) {
+  if (!opt || s.empty()) return;
+  size_t pos = 0;
+  while (pos < s.size()) {
+    size_t comma = s.find(',', pos);
+    std::string item = s.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
+    size_t eq = item.find('=');
+    if (eq != std::string::npos) {
+      std::string key = item.substr(0, eq);
+      int value = atoi(item.substr(eq + 1).c_str());
+      if (key == "bd") opt->dynamic_backdrop = value == 1;
+      else if (key == "dw") opt->display_w = value;
+      else if (key == "dh") opt->display_h = value;
+      else if (key == "vt") opt->view_t = value;
+      else if (key == "vb") opt->view_b = value;
+      else if (key == "vl") opt->view_l = value;
+      else if (key == "vr") opt->view_r = value;
+      else if (key == "cl") opt->crop_l = value;
+      else if (key == "ct") opt->crop_t = value;
+      else if (key == "vw") opt->vis_w = value;
+      else if (key == "vh") opt->vis_h = value;
+      else if (key == "tw") opt->tier_w = value;
+      else if (key == "th") opt->tier_h = value;
+    }
+    if (comma == std::string::npos) break;
+    pos = comma + 1;
+  }
+}
+
+static void parse_create_payload(const guint8* rest, gsize rlen, std::string* codec,
+    PlayerOptions* opt) {
+  std::string payload((const char*)rest, rlen);
+  size_t sep = payload.find('\n');
+  *codec = sep == std::string::npos ? payload : payload.substr(0, sep);
+  if (codec->empty()) *codec = "h264";
+  if (sep != std::string::npos) parse_player_options(payload.substr(sep + 1), opt);
+}
+
 #ifndef LIVI_GST_HOST_STANDALONE
 static std::string get_string_arg(napi_env env, napi_value v) {
   size_t len = 0;
@@ -344,10 +419,89 @@ static void player_finalize(napi_env env, void* data, void* hint) {
 }
 #endif
 
-// createPlayer(codec: string, windowHandle: Buffer) -> external
+static std::string normal_pipeline_desc(const std::string& codec, const char* decoder,
+    const std::string& presink) {
+  return "appsrc name=src is-live=true do-timestamp=true format=time"
+    " min-latency=0 max-latency=0 caps=" +
+    caps_for(codec) + " ! " + parser_for(codec) +
+    " ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=2000000000" +
+    " ! " + std::string(decoder) + " name=dec" +
+    " ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream" +
+    " ! " + presink + sink_chain();
+}
+
+static std::string dynamic_backdrop_pipeline_desc(const std::string& codec, const char* decoder,
+    const PlayerOptions& opt) {
+  int dw = opt.display_w > 0 ? opt.display_w : opt.tier_w;
+  int dh = opt.display_h > 0 ? opt.display_h : opt.tier_h;
+  int tw = opt.tier_w > 0 ? opt.tier_w : dw;
+  int th = opt.tier_h > 0 ? opt.tier_h : dh;
+  int vw = opt.vis_w > 0 ? opt.vis_w : tw;
+  int vh = opt.vis_h > 0 ? opt.vis_h : th;
+  if (dw <= 0 || dh <= 0 || tw <= 0 || th <= 0 || vw <= 0 || vh <= 0) return "";
+
+  int cl = clamp_i(opt.crop_l, 0, std::max(0, tw - 1));
+  int ct = clamp_i(opt.crop_t, 0, std::max(0, th - 1));
+  int cr = std::max(0, tw - cl - vw);
+  int cb = std::max(0, th - ct - vh);
+
+  int vl = clamp_i(opt.view_l, 0, std::max(0, dw - 2));
+  int vt = clamp_i(opt.view_t, 0, std::max(0, dh - 2));
+  int vr = clamp_i(opt.view_r, 0, std::max(0, dw - vl - 2));
+  int vb = clamp_i(opt.view_b, 0, std::max(0, dh - vt - 2));
+  int view_w = std::max(2, dw - vl - vr);
+  int view_h = std::max(2, dh - vt - vb);
+
+  int blur_w = round_even_i(clamp_i(dw / 8, 72, 128));
+  int blur_h = round_even_i(clamp_i(dh / 8, 72, 128));
+
+  std::string normalize =
+    crop_chain(cl, ct, cr, cb) +
+    "videoscale method=0 ! video/x-raw,width=" + std::to_string(dw) +
+    ",height=" + std::to_string(dh) + " ! ";
+
+  std::string view_crop = crop_chain(vl, vt, vr, vb);
+
+  return "appsrc name=src is-live=true do-timestamp=true format=time"
+    " min-latency=0 max-latency=0 caps=" +
+    caps_for(codec) + " ! " + parser_for(codec) +
+    " ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=2000000000" +
+    " ! " + std::string(decoder) + " name=dec" +
+    " ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream" +
+    " ! " + normalize +
+    "tee name=t "
+    "compositor name=comp background=black force-live=true ignore-inactive-pads=true latency=0"
+    " sink_0::xpos=0 sink_0::ypos=0 sink_0::width=" + std::to_string(dw) +
+    " sink_0::height=" + std::to_string(dh) +
+    " sink_0::zorder=0"
+    " sink_1::xpos=" + std::to_string(vl) +
+    " sink_1::ypos=" + std::to_string(vt) +
+    " sink_1::width=" + std::to_string(view_w) +
+    " sink_1::height=" + std::to_string(view_h) +
+    " sink_1::zorder=1"
+    " ! video/x-raw,width=" + std::to_string(dw) +
+    ",height=" + std::to_string(dh) +
+    " ! queue max-size-buffers=1 max-size-bytes=0 max-size-time=0 leaky=downstream"
+    " ! " + sink_chain() +
+    " t. ! queue max-size-buffers=1 max-size-bytes=0 max-size-time=0 leaky=downstream"
+    " ! videorate drop-only=true max-rate=5"
+    " ! videoscale method=0 ! video/x-raw,width=" + std::to_string(blur_w) +
+    ",height=" + std::to_string(blur_h) +
+    " ! videoconvert ! video/x-raw,format=AYUV"
+    " ! gaussianblur sigma=8 qos=false"
+    " ! videoscale method=0 ! video/x-raw,width=" + std::to_string(dw) +
+    ",height=" + std::to_string(dh) +
+    " ! comp.sink_0"
+    " t. ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream"
+    " ! " + view_crop +
+    "comp.sink_1";
+}
+
+// createPlayer(codec: string, windowHandle: Buffer, options?: string) -> external
 // Build the decode + waylandsink pipeline for a codec. handle is the native window for the
 // mac/Windows overlay, unused on Linux. Returns NULL on parse failure.
-static Player* livi_create_player(const std::string& codec, guintptr handle) {
+static Player* livi_create_player(const std::string& codec, guintptr handle,
+    const PlayerOptions& options = PlayerOptions()) {
   // Live low-latency, two queues on purpose:
   //  - BEFORE the decoder: NON-leaky. A stateless HW decoder needs every
   //    encoded frame for its reference chain, dropping one corrupts the DPB
@@ -364,16 +518,21 @@ static Player* livi_create_player(const std::string& codec, guintptr handle) {
   if (!is_hw_decoder(decoder)) presink = "videoconvert ! ";
 #endif
 
-  std::string desc = "appsrc name=src is-live=true do-timestamp=true format=time"
-    " min-latency=0 max-latency=0 caps=" +
-    caps_for(codec) + " ! " + parser_for(codec) +
-    " ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=2000000000" +
-    " ! " + std::string(decoder) + " name=dec" +
-    " ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream" +
-    " ! " + presink + sink_chain();
+  std::string normal_desc = normal_pipeline_desc(codec, decoder, presink);
+  std::string desc = normal_desc;
+  bool dynamic = options.dynamic_backdrop;
+  if (dynamic) {
+    std::string dyn = dynamic_backdrop_pipeline_desc(codec, decoder, options);
+    if (!dyn.empty()) {
+      desc = dyn;
+    } else {
+      dynamic = false;
+      fprintf(stderr, "[gst_video] dynamic backdrop requested but geometry is invalid; using normal pipeline\n");
+    }
+  }
 
-  fprintf(stderr, "[gst_video] codec=%s decoder=%s | %s\n",
-    codec.c_str(), decoder, desc.c_str());
+  fprintf(stderr, "[gst_video] codec=%s decoder=%s dynamic_backdrop=%d | %s\n",
+    codec.c_str(), decoder, dynamic ? 1 : 0, desc.c_str());
 
   GError* err = nullptr;
   GstElement* pipeline = gst_parse_launch(desc.c_str(), &err);
@@ -382,7 +541,21 @@ static Player* livi_create_player(const std::string& codec, guintptr handle) {
       err ? err->message : "unknown");
     if (err) g_error_free(err);
     if (pipeline) gst_object_unref(pipeline);
-    return nullptr;
+    if (dynamic) {
+      fprintf(stderr, "[gst_video] falling back to normal pipeline after dynamic backdrop failure\n");
+      err = nullptr;
+      desc = normal_desc;
+      pipeline = gst_parse_launch(desc.c_str(), &err);
+      if (!pipeline || err) {
+        fprintf(stderr, "[gst_video] fallback pipeline parse FAILED: %s\n",
+          err ? err->message : "unknown");
+        if (err) g_error_free(err);
+        if (pipeline) gst_object_unref(pipeline);
+        return nullptr;
+      }
+    } else {
+      return nullptr;
+    }
   }
 
   Player* p = new Player();
@@ -442,15 +615,17 @@ static Player* livi_create_player(const std::string& codec, guintptr handle) {
 }
 
 #ifndef LIVI_GST_HOST_STANDALONE
-// createPlayer(codec: string, windowHandle: Buffer) -> external
+// createPlayer(codec: string, windowHandle: Buffer, options?: string) -> external
 static napi_value CreatePlayer(napi_env env, napi_callback_info info) {
   ensure_init();
 
-  size_t argc = 2;
-  napi_value argv[2];
+  size_t argc = 3;
+  napi_value argv[3];
   napi_get_cb_info(env, info, &argc, argv, NULL, NULL);
 
   std::string codec = argc >= 1 ? get_string_arg(env, argv[0]) : "h264";
+  PlayerOptions options;
+  if (argc >= 3) parse_player_options(get_string_arg(env, argv[2]), &options);
 
   guintptr handle = 0;
   if (argc >= 2) {
@@ -461,7 +636,7 @@ static napi_value CreatePlayer(napi_env env, napi_callback_info info) {
     }
   }
 
-  Player* p = livi_create_player(codec, handle);
+  Player* p = livi_create_player(codec, handle, options);
   if (!p) {
     napi_value n;
     napi_get_null(env, &n);
@@ -599,16 +774,15 @@ struct LiviHost {
 static void livi_host_dispatch(LiviHost* h, guint8 op, guint32 id, const guint8* rest, gsize rlen) {
   gpointer key = GUINT_TO_POINTER(id);
   if (op == 1) {
-    char codec[16];
-    gsize n = rlen < sizeof(codec) - 1 ? rlen : sizeof(codec) - 1;
-    memcpy(codec, rest, n);
-    codec[n] = '\0';
+    std::string codec;
+    PlayerOptions options;
+    parse_create_payload(rest, rlen, &codec, &options);
     Player* old = (Player*)g_hash_table_lookup(h->players, key);
     if (old) {
       g_hash_table_remove(h->players, key);
       livi_free_player(old);
     }
-    Player* p = livi_create_player(codec, 0);
+    Player* p = livi_create_player(codec, 0, options);
     if (p) {
       gst_element_set_state(p->pipeline, GST_STATE_PLAYING);
       g_hash_table_insert(h->players, key, p);

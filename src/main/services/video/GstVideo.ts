@@ -7,6 +7,25 @@ import { gstHost } from './gstHost'
 
 export type GstVideoCodec = 'h264' | 'h265' | 'vp9' | 'av1'
 
+export type GstVideoOptions = {
+  dynamicBackdrop?: boolean
+  displayWidth?: number
+  displayHeight?: number
+  viewAreaTop?: number
+  viewAreaBottom?: number
+  viewAreaLeft?: number
+  viewAreaRight?: number
+}
+
+type GstVideoRegion = {
+  cropL: number
+  cropT: number
+  visW: number
+  visH: number
+  tierW: number
+  tierH: number
+} | null
+
 // Parse "#rrggbb" into 0..255 channels, falls back to black on a malformed value
 function hexToRgb255(hex: string): [number, number, number] {
   const m = /^#?([0-9a-f]{6})$/i.exec((hex ?? '').trim())
@@ -161,7 +180,7 @@ export type GstCodecProbe = Record<GstVideoCodec, GstCodecSupport>
 interface GstAddon {
   version(): string
   probeCodecs(): GstCodecProbe
-  createPlayer(codec: string, windowHandle: Buffer): unknown
+  createPlayer(codec: string, windowHandle: Buffer, options?: string): unknown
   start(player: unknown): void
   pushBuffer(player: unknown, buffer: Buffer): boolean
   setVisible(player: unknown, visible: boolean): void
@@ -220,6 +239,56 @@ function load(): GstAddon | null {
   return addon
 }
 
+function n(v: number | undefined): number {
+  return typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : 0
+}
+
+function encodePlayerOptions(options: GstVideoOptions, region: GstVideoRegion): string {
+  if (options.dynamicBackdrop !== true) return ''
+
+  const displayWidth = n(options.displayWidth)
+  const displayHeight = n(options.displayHeight)
+  if (displayWidth <= 0 || displayHeight <= 0) return ''
+
+  const r = region
+  const tierW = n(r?.tierW) || displayWidth
+  const tierH = n(r?.tierH) || displayHeight
+  const visW = n(r?.visW) || tierW
+  const visH = n(r?.visH) || tierH
+
+  const values: Record<string, number> = {
+    bd: 1,
+    dw: displayWidth,
+    dh: displayHeight,
+    vt: n(options.viewAreaTop),
+    vb: n(options.viewAreaBottom),
+    vl: n(options.viewAreaLeft),
+    vr: n(options.viewAreaRight),
+    cl: n(r?.cropL),
+    ct: n(r?.cropT),
+    vw: visW,
+    vh: visH,
+    tw: tierW,
+    th: tierH
+  }
+
+  return Object.entries(values)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(',')
+}
+
+function regionKey(region: GstVideoRegion): string {
+  if (!region) return ''
+  return [
+    n(region.cropL),
+    n(region.cropT),
+    n(region.visW),
+    n(region.visH),
+    n(region.tierW),
+    n(region.tierH)
+  ].join(':')
+}
+
 // Which codecs the bundled/loaded GStreamer can decode on this platform,
 // and whether the decoder is hardware-accelerated
 export function probeGstCodecs(): GstCodecProbe {
@@ -242,20 +311,14 @@ export class GstVideo {
   private codec: GstVideoCodec | null = null
   private visible = true
   // AA content region inside the decoded tier (so the user-chosen AR fills the display)
-  private region: {
-    cropL: number
-    cropT: number
-    visW: number
-    visH: number
-    tierW: number
-    tierH: number
-  } | null = null
+  private region: GstVideoRegion = null
 
   // role = compositor tag for this plane; targetScreen = which screen it's placed on
   constructor(
     private readonly wc: WebContents,
     private readonly role: string = 'main',
-    private readonly targetScreen: string = 'main'
+    private readonly targetScreen: string = 'main',
+    private readonly options: GstVideoOptions = {}
   ) {}
 
   private windowHandle(): Buffer | null {
@@ -265,11 +328,12 @@ export class GstVideo {
   }
 
   private ensure(codec: GstVideoCodec): void {
+    const playerOptions = encodePlayerOptions(this.options, this.region)
     if (useHostProcess) {
       if (this.started && this.codec === codec) return
       this.dispose()
       compositorControl.claim(this.role) // tag the waylandsink toplevel the host process creates next
-      gstHost.createPlayer(this.id, codec)
+      gstHost.createPlayer(this.id, codec, playerOptions)
       this.codec = codec
       this.started = true
       return
@@ -281,7 +345,7 @@ export class GstVideo {
     const handle = this.windowHandle()
     if (!handle) return
     compositorControl.claim(this.role)
-    this.player = a.createPlayer(codec, handle)
+    this.player = a.createPlayer(codec, handle, playerOptions)
     this.codec = codec
     if (this.player) {
       a.start(this.player)
@@ -319,24 +383,53 @@ export class GstVideo {
     tierW: number,
     tierH: number
   ): void {
+    const prevRegionKey = regionKey(this.region)
     this.region = visW > 0 && visH > 0 ? { cropL, cropT, visW, visH, tierW, tierH } : null
-    // Linux: the compositor places + crops the tagged plane on its target screen
-    compositorControl.videocfg(this.role, this.targetScreen, cropL, cropT, visW, visH, tierW, tierH)
+    const nextRegionKey = regionKey(this.region)
+    if (this.options.dynamicBackdrop === true && this.started && prevRegionKey !== nextRegionKey) {
+      this.dispose()
+    }
+
+    // Linux: the compositor places + crops the tagged plane on its target screen.
+    // Dynamic backdrop pipelines already compose a full display-sized frame, so the outer
+    // compositor should place it 1:1 and leave the native blur/foreground composition intact.
+    if (this.options.dynamicBackdrop === true) {
+      const dw = n(this.options.displayWidth)
+      const dh = n(this.options.displayHeight)
+      compositorControl.videocfg(this.role, this.targetScreen, 0, 0, dw, dh, dw, dh)
+    } else {
+      compositorControl.videocfg(
+        this.role,
+        this.targetScreen,
+        cropL,
+        cropT,
+        visW,
+        visH,
+        tierW,
+        tierH
+      )
+    }
     if (addon && this.player) this.applyRegion(addon)
   }
 
   private applyRegion(a: GstAddon): void {
     if (!this.player) return
     const r = this.region
-    a.setContentRegion(
-      this.player,
-      r?.cropL ?? 0,
-      r?.cropT ?? 0,
-      r?.visW ?? 0,
-      r?.visH ?? 0,
-      r?.tierW ?? 0,
-      r?.tierH ?? 0
-    )
+    if (this.options.dynamicBackdrop === true) {
+      const dw = n(this.options.displayWidth)
+      const dh = n(this.options.displayHeight)
+      a.setContentRegion(this.player, 0, 0, dw, dh, dw, dh)
+    } else {
+      a.setContentRegion(
+        this.player,
+        r?.cropL ?? 0,
+        r?.cropT ?? 0,
+        r?.visW ?? 0,
+        r?.visH ?? 0,
+        r?.tierW ?? 0,
+        r?.tierH ?? 0
+      )
+    }
   }
 
   dispose(): void {
