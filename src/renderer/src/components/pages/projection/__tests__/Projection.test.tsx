@@ -357,7 +357,7 @@ describe('Projection page', () => {
     })
     fireEvent.pointerUp(close)
 
-    expect(screen.getByText('Quit LIVI?')).toBeInTheDocument()
+    expect(screen.getByText('Quit motoCarPlay?')).toBeInTheDocument()
 
     fireEvent.click(screen.getByText('QUIT'))
 

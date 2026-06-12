@@ -1564,7 +1564,7 @@ function MetricGraph({
         onPointerUp={closeHoldEnd}
         onPointerLeave={closeHoldCancel}
         style={{ ...closeBtn, position: 'absolute', top: 10, right: 12, zIndex: 20 }}
-        title="tap to close - hold to quit app"
+        title={'tap to close \u00b7 hold to quit app'}
       >
         {'\u2715'}
       </button>
@@ -1608,7 +1608,7 @@ function MetricGraph({
               letterSpacing: 0.5
             }}
           >
-            Quit LIVI?
+            Quit motoCarPlay?
           </div>
           <div style={{ color: '#888', fontSize: 12, fontFamily: 'monospace', marginBottom: 18 }}>
             this closes the dashboard app
