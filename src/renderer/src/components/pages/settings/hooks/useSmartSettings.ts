@@ -16,13 +16,20 @@ function isRestartRelevantPath(path?: string) {
 }
 
 function applyMotoLinkedSettings(next: Record<string, unknown>, path: string, value: unknown): void {
-  if (value !== true) return
   if (path === 'backdropEnabled') {
-    next.ambientFillEnabled = false
-    next.roundedCornerMaskEnabled = true
+    if (value === true) {
+      next.ambientFillEnabled = false
+      next.roundedCornerMaskEnabled = true
+    } else if (value === false) {
+      next.roundedCornerMaskEnabled = false
+    }
   } else if (path === 'ambientFillEnabled') {
-    next.backdropEnabled = false
-    next.roundedCornerMaskEnabled = true
+    if (value === true) {
+      next.backdropEnabled = false
+      next.roundedCornerMaskEnabled = true
+    } else if (value === false) {
+      next.roundedCornerMaskEnabled = false
+    }
   }
 }
 

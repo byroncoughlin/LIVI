@@ -188,6 +188,48 @@ describe('useSmartSettings', () => {
     })
   })
 
+  test('turning off backdrop or background fill also turns off corner mask', () => {
+    const backdropSettings = {
+      backdropEnabled: true,
+      ambientFillEnabled: false,
+      roundedCornerMaskEnabled: true
+    } as any
+    const backdrop = renderHook(() => useSmartSettings(backdropSettings, backdropSettings))
+
+    act(() => {
+      backdrop.result.current.handleFieldChange('backdropEnabled', false)
+    })
+
+    expect(backdrop.result.current.state.backdropEnabled).toBe(false)
+    expect(backdrop.result.current.state.roundedCornerMaskEnabled).toBe(false)
+    expect(saveSettings).toHaveBeenLastCalledWith({
+      backdropEnabled: false,
+      ambientFillEnabled: false,
+      roundedCornerMaskEnabled: false
+    })
+
+    saveSettings.mockClear()
+
+    const fillSettings = {
+      backdropEnabled: false,
+      ambientFillEnabled: true,
+      roundedCornerMaskEnabled: true
+    } as any
+    const fill = renderHook(() => useSmartSettings(fillSettings, fillSettings))
+
+    act(() => {
+      fill.result.current.handleFieldChange('ambientFillEnabled', false)
+    })
+
+    expect(fill.result.current.state.ambientFillEnabled).toBe(false)
+    expect(fill.result.current.state.roundedCornerMaskEnabled).toBe(false)
+    expect(saveSettings).toHaveBeenLastCalledWith({
+      backdropEnabled: false,
+      ambientFillEnabled: false,
+      roundedCornerMaskEnabled: false
+    })
+  })
+
   test('handleFieldChange with validate override blocks invalid values', () => {
     // line 69: override?.validate returning false → no state update
     const initial = { volume: 50 } as any
