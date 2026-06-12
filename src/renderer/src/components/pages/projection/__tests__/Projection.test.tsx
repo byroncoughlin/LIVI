@@ -226,12 +226,16 @@ describe('Projection page', () => {
       />
     )
 
-    expect(screen.getByTestId('projection-waiting-pane')).toHaveStyle({
+    const pane = screen.getByTestId('projection-waiting-pane')
+
+    expect(pane).toHaveStyle({
       left: '14.75%',
       top: '14.75%',
       width: '70.5%',
-      height: '70.5%'
+      height: '70.5%',
+      backgroundColor: '#05070a'
     })
+    expect(pane.children.length).toBeGreaterThan(0)
   })
 
   test('hides waiting pane while live projection video is visible', () => {

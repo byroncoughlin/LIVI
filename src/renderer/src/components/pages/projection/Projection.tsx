@@ -101,6 +101,16 @@ function WaitingProjectionPane({ settings, show }: { settings: Config; show: boo
   const width = Math.max(1, displayWidth - left - right)
   const height = Math.max(1, displayHeight - top - bottom)
   const pct = (value: number, total: number): string => `${(value / total) * 100}%`
+  const appTiles = [
+    '#3b82f6',
+    '#22c55e',
+    '#f97316',
+    '#ec4899',
+    '#06b6d4',
+    '#a855f7',
+    '#eab308',
+    '#ef4444'
+  ]
 
   return (
     <div
@@ -112,13 +122,74 @@ function WaitingProjectionPane({ settings, show }: { settings: Config; show: boo
         top: pct(top, displayHeight),
         width: pct(width, displayWidth),
         height: pct(height, displayHeight),
-        backgroundColor: '#000',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: 32,
+        backgroundColor: '#05070a',
+        border: '1px solid rgba(255,255,255,0.16)',
+        borderRadius: 34,
+        overflow: 'hidden',
         pointerEvents: 'none',
         zIndex: 0
       }}
-    />
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01) 36%, rgba(0,0,0,0.2))'
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          left: '8%',
+          right: '8%',
+          top: '9%',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '8%'
+        }}
+      >
+        {appTiles.map((color, index) => (
+          <div
+            key={`${color}-${index}`}
+            style={{
+              aspectRatio: '1 / 1',
+              borderRadius: '24%',
+              backgroundColor: color,
+              opacity: 0.88
+            }}
+          />
+        ))}
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: '9%',
+          right: '9%',
+          bottom: '7%',
+          height: '15%',
+          borderRadius: 24,
+          backgroundColor: 'rgba(255,255,255,0.13)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          alignItems: 'center',
+          gap: '7%',
+          padding: '0 6%'
+        }}
+      >
+        {['#22c55e', '#3b82f6', '#f43f5e', '#eab308'].map((color) => (
+          <div
+            key={color}
+            style={{
+              aspectRatio: '1 / 1',
+              borderRadius: '26%',
+              backgroundColor: color,
+              opacity: 0.92
+            }}
+          />
+        ))}
+      </div>
+    </div>
   )
 }
 
