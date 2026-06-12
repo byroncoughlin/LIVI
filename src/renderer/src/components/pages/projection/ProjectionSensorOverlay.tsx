@@ -1574,11 +1574,11 @@ function GraphPane({
   const [confirmReset, setConfirmReset] = React.useState(false)
   const panRef = React.useRef({ active: false, startX: 0, startOff: 0 })
   const svgW = 565
-  const cx = 58
-  const cw = svgW - cx - 10
   const cy = 8
-  const ch = compact ? 168 : 358
-  const svgH = cy + ch + (compact ? 38 : 64)
+  const cx = compact ? 58 : 75
+  const cw = compact ? svgW - cx - 10 : 449
+  const ch = compact ? 168 : 318
+  const svgH = cy + ch + (compact ? 38 : 34)
   const windowEnd = nowMs - viewOffset
   const windowStart = windowEnd - GRAPH_WINDOW_MS
   const visible = data.filter((p) => p.ts >= windowStart - 5000 && p.ts <= windowEnd + 5000)
@@ -1690,7 +1690,14 @@ function GraphPane({
       </div>
       <svg
         viewBox={`0 0 ${svgW} ${svgH}`}
-        style={{ flex: 1, minHeight: 0, display: 'block', cursor: 'ew-resize', touchAction: 'none' }}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'block',
+          cursor: 'ew-resize',
+          touchAction: 'none',
+          marginTop: compact ? 0 : -14
+        }}
         preserveAspectRatio="xMidYMid meet"
         onPointerDown={onPtrDown}
         onPointerMove={onPtrMove}
