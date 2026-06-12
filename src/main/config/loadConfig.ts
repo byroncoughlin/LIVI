@@ -2,6 +2,7 @@ import type { Config } from '@shared/types'
 import { DEFAULT_CONFIG } from '@shared/types'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { CONFIG_PATH } from './paths'
+import { enforceRoundDashboardConfig } from './roundDashboardConfig'
 import { validate } from './validateConfig'
 
 export function loadConfig(): Config {
@@ -15,7 +16,7 @@ export function loadConfig(): Config {
     }
   }
 
-  const merged = validate(fileConfig, DEFAULT_CONFIG)
+  const merged = enforceRoundDashboardConfig(validate(fileConfig, DEFAULT_CONFIG))
 
   const needWrite =
     !existsSync(CONFIG_PATH) || JSON.stringify(fileConfig) !== JSON.stringify(merged)
