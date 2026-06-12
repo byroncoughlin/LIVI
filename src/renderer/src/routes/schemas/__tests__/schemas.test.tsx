@@ -108,7 +108,7 @@ describe('settings schemas', () => {
     expect(sliders[0].valueTransform.fromView(65, 1)).toBe(0.65)
   })
 
-  test('moto settings expose the original round dashboard key bindings', () => {
+  test('moto settings expose the compact round dashboard key bindings', () => {
     if (settingsSchema.type !== 'route') {
       throw new Error('settingsSchema must be a route node')
     }
@@ -126,7 +126,7 @@ describe('settings schemas', () => {
       'selectDown',
       'back',
       'home',
-      'play',
+      'playPause',
       'pause',
       'next',
       'prev'
@@ -142,8 +142,8 @@ describe('settings schemas', () => {
       'KeyH',
       'KeyP',
       'KeyO',
-      'KeyM',
-      'KeyN'
+      'KeyN',
+      'KeyB'
     ])
   })
 

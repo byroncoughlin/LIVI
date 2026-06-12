@@ -186,9 +186,9 @@ export const motoSettingsSchema: SettingsNode<Config> = {
         },
         {
           type: 'keybinding',
-          label: 'Play',
-          path: 'bindings.play',
-          bindingKey: 'play',
+          label: 'Play/Pause',
+          path: 'bindings.playPause',
+          bindingKey: 'playPause',
           defaultValue: 'KeyP'
         },
         {
@@ -203,14 +203,14 @@ export const motoSettingsSchema: SettingsNode<Config> = {
           label: 'Next',
           path: 'bindings.next',
           bindingKey: 'next',
-          defaultValue: 'KeyM'
+          defaultValue: 'KeyN'
         },
         {
           type: 'keybinding',
           label: 'Prev',
           path: 'bindings.prev',
           bindingKey: 'prev',
-          defaultValue: 'KeyN'
+          defaultValue: 'KeyB'
         }
       ]
     },
