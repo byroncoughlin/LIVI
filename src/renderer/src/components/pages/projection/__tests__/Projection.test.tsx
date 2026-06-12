@@ -191,6 +191,24 @@ describe('Projection page', () => {
     expect(screen.getByLabelText('R cylinder head temperature')).toHaveTextContent('163')
   })
 
+  test('renders GPS speed on the projection screen', async () => {
+    render(<Projection {...baseProps()} />)
+
+    act(() => {
+      telemetryCb?.({ gpsFix: true, speedKph: 88.5 })
+    })
+
+    expect(screen.getByLabelText('GPS speed')).toHaveTextContent('55')
+    expect(screen.getByLabelText('GPS speed')).toHaveTextContent('mph')
+
+    act(() => {
+      telemetryCb?.({ gpsFix: false })
+    })
+
+    expect(screen.getByLabelText('GPS speed')).toHaveTextContent('--')
+    expect(screen.getByLabelText('GPS speed')).toHaveTextContent('ACQUIRING')
+  })
+
   test('usb unplugged stops projection and clears streaming state', async () => {
     const setReceivingVideo = jest.fn()
 

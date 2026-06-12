@@ -12,7 +12,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { useFftPcm } from '../../../hooks/useFftPcm'
 import { useLiviStore, useStatusStore } from '../../../store/store'
 import { useProjectionMultiTouch } from './hooks/useProjectionTouch'
-import { ProjectionCylinderHeadOverlay } from './ProjectionCylinderHeadOverlay'
+import { ProjectionSensorOverlay } from './ProjectionSensorOverlay'
 import { ViewAreaMask } from './ViewAreaMask'
 
 const RETRY_DELAY_MS = 3000
@@ -888,7 +888,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
         }}
       />
 
-      {pathname === '/' && <ProjectionCylinderHeadOverlay />}
+      {pathname === '/' && <ProjectionSensorOverlay />}
     </div>
   )
 }
