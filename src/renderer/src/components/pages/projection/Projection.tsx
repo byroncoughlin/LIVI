@@ -10,6 +10,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { useFftPcm } from '../../../hooks/useFftPcm'
 import { useLiviStore, useStatusStore } from '../../../store/store'
 import { useProjectionMultiTouch } from './hooks/useProjectionTouch'
+import { roundDashboardFramePct } from './motoLayout'
 import { ProjectionSensorOverlay } from './ProjectionSensorOverlay'
 import { SystemMonitor } from './SystemMonitor'
 import { ViewAreaMask } from './ViewAreaMask'
@@ -79,9 +80,7 @@ function WaitingProjectionPane({ settings, show }: { settings: Config; show: boo
   const right = Math.min(nonNegative(settings.projectionViewAreaRight), displayWidth - left)
   const top = Math.min(nonNegative(settings.projectionViewAreaTop), displayHeight)
   const bottom = Math.min(nonNegative(settings.projectionViewAreaBottom), displayHeight - top)
-  const width = Math.max(1, displayWidth - left - right)
-  const height = Math.max(1, displayHeight - top - bottom)
-  const pct = (value: number, total: number): string => `${(value / total) * 100}%`
+  const frame = roundDashboardFramePct(displayWidth, displayHeight, { top, bottom, left, right })
   const appTiles = [
     { label: 'Music', color: '#ff2d55' },
     { label: 'Overcast', color: '#ff9500' },
@@ -101,10 +100,10 @@ function WaitingProjectionPane({ settings, show }: { settings: Config; show: boo
       aria-hidden="true"
       style={{
         position: 'absolute',
-        left: pct(left, displayWidth),
-        top: pct(top, displayHeight),
-        width: pct(width, displayWidth),
-        height: pct(height, displayHeight),
+        left: frame.left,
+        top: frame.top,
+        width: frame.width,
+        height: frame.height,
         backgroundColor: '#07111f',
         border: '1px solid rgba(255,255,255,0.16)',
         borderRadius: 34,

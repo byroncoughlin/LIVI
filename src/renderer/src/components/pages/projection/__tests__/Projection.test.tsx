@@ -490,7 +490,7 @@ describe('Projection page', () => {
     jest.useRealTimers()
   })
 
-  test('renders waiting pane at the configured projection view area while video is absent', () => {
+  test('renders waiting pane at the round dashboard center square while video is absent', () => {
     jest.useFakeTimers()
     jest.setSystemTime(new Date('2026-06-12T17:07:00'))
     statusState.isStreaming = false
@@ -515,10 +515,10 @@ describe('Projection page', () => {
       const pane = screen.getByTestId('projection-waiting-pane')
 
       expect(pane).toHaveStyle({
-        left: '14.75%',
-        top: '14.75%',
-        width: '70.5%',
-        height: '70.5%',
+        left: '14.625%',
+        top: '14.625%',
+        width: '70.625%',
+        height: '70.625%',
         backgroundColor: '#07111f'
       })
       expect(screen.getByText('Music')).toBeInTheDocument()
@@ -528,6 +528,33 @@ describe('Projection page', () => {
     } finally {
       jest.useRealTimers()
     }
+  })
+
+  test('renders waiting pane from custom projection view area outside the round default', () => {
+    statusState.isStreaming = false
+
+    render(
+      <Projection
+        {...baseProps({
+          settings: {
+            ...baseProps().settings,
+            projectionWidth: 800,
+            projectionHeight: 480,
+            projectionViewAreaTop: 20,
+            projectionViewAreaBottom: 40,
+            projectionViewAreaLeft: 80,
+            projectionViewAreaRight: 120
+          }
+        })}
+      />
+    )
+
+    expect(screen.getByTestId('projection-waiting-pane')).toHaveStyle({
+      left: '10%',
+      top: '4.166666666666666%',
+      width: '75%',
+      height: '87.5%'
+    })
   })
 
   test('hides waiting pane when video frames are present', () => {
