@@ -193,6 +193,11 @@ export type Config = {
   kiosk: WindowAssignment
   uiZoomPercent: number
   appearanceMode: AppearanceMode
+  backdropEnabled?: boolean
+  ambientFillEnabled?: boolean
+  ambientFillColor?: string
+  leanOffset?: number
+  pitchOffset?: number
 
   // Camera + dashboards + media slots
   cameraId: string

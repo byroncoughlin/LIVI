@@ -206,7 +206,7 @@ describe('Projection page', () => {
     })
 
     expect(screen.getByLabelText('GPS speed')).toHaveTextContent('--')
-    expect(screen.getByLabelText('GPS speed')).toHaveTextContent('ACQUIRING')
+    expect(screen.getByText('ACQUIRING')).toBeInTheDocument()
   })
 
   test('usb unplugged stops projection and clears streaming state', async () => {

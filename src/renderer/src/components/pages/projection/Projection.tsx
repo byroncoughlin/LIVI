@@ -17,6 +17,10 @@ import { ViewAreaMask } from './ViewAreaMask'
 
 const RETRY_DELAY_MS = 3000
 const HOST_UI_ROUTE = '/settings'
+const DEFAULT_MOTO_FILL_COLOR = '#142321'
+
+const normalizeMotoFillColor = (value?: string): string =>
+  /^#[0-9a-fA-F]{6}$/.test(value ?? '') ? value! : DEFAULT_MOTO_FILL_COLOR
 
 interface CarplayProps {
   receivingVideo: boolean
@@ -815,6 +819,12 @@ const CarplayComponent: React.FC<CarplayProps> = ({
 
   const visibleWidth = aaContent?.contentWidth ?? resolvedNegotiatedWidth
   const visibleHeight = aaContent?.contentHeight ?? resolvedNegotiatedHeight
+  const maskColor =
+    settings.backdropEnabled === true
+      ? 'transparent'
+      : settings.ambientFillEnabled === true
+        ? normalizeMotoFillColor(settings.ambientFillColor)
+        : undefined
 
   const touchHandlers = useProjectionMultiTouch(
     videoContainerRef,
@@ -886,6 +896,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
           left: settings.projectionViewAreaLeft ?? 0,
           right: settings.projectionViewAreaRight ?? 0
         }}
+        color={maskColor}
       />
 
       {pathname === '/' && <ProjectionSensorOverlay />}

@@ -60,6 +60,7 @@ describe('settings schemas', () => {
     }
     expect((settingsSchema.children as any[]).map((child) => child.route)).toEqual([
       'connection',
+      'motoDisplay',
       'projection',
       'system'
     ])

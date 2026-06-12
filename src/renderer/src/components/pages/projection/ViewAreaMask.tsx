@@ -10,12 +10,14 @@ export function ViewAreaMask({
   insets,
   displayWidth,
   displayHeight,
-  visible
+  visible,
+  color
 }: {
   insets: ViewAreaInsets
   displayWidth: number
   displayHeight: number
   visible: boolean
+  color?: string
 }) {
   const theme = useTheme()
   if (!visible || displayWidth <= 0 || displayHeight <= 0) return null
@@ -23,7 +25,7 @@ export function ViewAreaMask({
   const pct = (v: number, total: number): string => `${(Math.max(0, v) / total) * 100}%`
   const bar: CSSProperties = {
     position: 'absolute',
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: color ?? theme.palette.background.default,
     pointerEvents: 'none',
     zIndex: 5
   }

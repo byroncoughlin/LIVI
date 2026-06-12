@@ -56,6 +56,50 @@ export const motoSettingsSchema: SettingsNode<Config> = {
     },
     {
       type: 'route',
+      route: 'motoDisplay',
+      label: 'Moto Display',
+      path: '',
+      children: [
+        {
+          type: 'checkbox',
+          label: 'Backdrop',
+          path: 'backdropEnabled'
+        },
+        {
+          type: 'checkbox',
+          label: 'Background Fill',
+          path: 'ambientFillEnabled'
+        },
+        {
+          type: 'color',
+          label: 'Background Color',
+          path: 'ambientFillColor',
+          displayValue: true
+        },
+        {
+          type: 'number',
+          label: 'Lean Offset',
+          path: 'leanOffset',
+          min: -45,
+          max: 45,
+          step: 1,
+          displayValue: true,
+          displayValueUnit: '\u00b0'
+        },
+        {
+          type: 'number',
+          label: 'Pitch Offset',
+          path: 'pitchOffset',
+          min: -45,
+          max: 45,
+          step: 1,
+          displayValue: true,
+          displayValueUnit: '\u00b0'
+        }
+      ]
+    },
+    {
+      type: 'route',
       route: 'projection',
       label: 'Projection',
       path: '',
