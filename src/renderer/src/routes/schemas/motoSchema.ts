@@ -237,6 +237,11 @@ export const motoSettingsSchema: SettingsNode<Config> = {
           displayValue: true
         },
         {
+          type: 'checkbox',
+          label: 'Round Corners',
+          path: 'roundedCornerMaskEnabled'
+        },
+        {
           type: 'custom',
           label: 'Tilt Calibration',
           path: '',

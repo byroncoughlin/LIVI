@@ -3,6 +3,8 @@ import type { CSSProperties } from 'react'
 
 export type ViewAreaInsets = { top: number; bottom: number; left: number; right: number }
 
+const CORNER_RADIUS_PX = 38
+
 // Passepartout between the LIVI UI and the video plane: paints the configured view-area margins
 // with the theme background, leaving the view area itself transparent so the video shows through.
 // Platform-independent, the video always sits below the React UI (mac NSView, Linux compositor plane).
@@ -11,35 +13,106 @@ export function ViewAreaMask({
   displayWidth,
   displayHeight,
   visible,
-  color
+  color,
+  cornerMask
 }: {
   insets: ViewAreaInsets
   displayWidth: number
   displayHeight: number
   visible: boolean
   color?: string
+  cornerMask?: boolean
 }) {
   const theme = useTheme()
-  if (!visible || displayWidth <= 0 || displayHeight <= 0) return null
+  if (
+    !visible ||
+    typeof displayWidth !== 'number' ||
+    typeof displayHeight !== 'number' ||
+    !Number.isFinite(displayWidth) ||
+    !Number.isFinite(displayHeight) ||
+    displayWidth <= 0 ||
+    displayHeight <= 0
+  ) {
+    return null
+  }
 
   const pct = (v: number, total: number): string => `${(Math.max(0, v) / total) * 100}%`
+  const maskColor = color ?? theme.palette.background.default
   const bar: CSSProperties = {
     position: 'absolute',
-    backgroundColor: color ?? theme.palette.background.default,
+    backgroundColor: maskColor,
     pointerEvents: 'none',
     zIndex: 5
   }
+  const centerTop = pct(insets.top, displayHeight)
+  const centerBottom = pct(insets.bottom, displayHeight)
+  const centerLeft = pct(insets.left, displayWidth)
+  const centerRight = pct(insets.right, displayWidth)
+  const radius = Math.max(0, Math.min(CORNER_RADIUS_PX, displayWidth / 8, displayHeight / 8))
+  const radiusX = pct(radius, displayWidth)
+  const radiusY = pct(radius, displayHeight)
+  const cornerBase: CSSProperties = {
+    position: 'absolute',
+    width: radiusX,
+    height: radiusY,
+    pointerEvents: 'none',
+    zIndex: 6
+  }
+  const roundedStop = '70%'
+  const hardStop = '71%'
+  const cornerGradient = (at: string): string =>
+    `radial-gradient(circle at ${at}, transparent 0 ${roundedStop}, ${maskColor} ${hardStop})`
 
   return (
     <>
-      <div style={{ ...bar, top: 0, left: 0, right: 0, height: pct(insets.top, displayHeight) }} />
+      <div style={{ ...bar, top: 0, left: 0, right: 0, height: centerTop }} />
       <div
-        style={{ ...bar, bottom: 0, left: 0, right: 0, height: pct(insets.bottom, displayHeight) }}
+        style={{ ...bar, bottom: 0, left: 0, right: 0, height: centerBottom }}
       />
-      <div style={{ ...bar, top: 0, bottom: 0, left: 0, width: pct(insets.left, displayWidth) }} />
+      <div style={{ ...bar, top: 0, bottom: 0, left: 0, width: centerLeft }} />
       <div
-        style={{ ...bar, top: 0, bottom: 0, right: 0, width: pct(insets.right, displayWidth) }}
+        style={{ ...bar, top: 0, bottom: 0, right: 0, width: centerRight }}
       />
+      {cornerMask && radius > 0 && (
+        <>
+          <div
+            data-testid="view-area-corner-mask-top-left"
+            style={{
+              ...cornerBase,
+              top: centerTop,
+              left: centerLeft,
+              background: cornerGradient('100% 100%')
+            }}
+          />
+          <div
+            data-testid="view-area-corner-mask-top-right"
+            style={{
+              ...cornerBase,
+              top: centerTop,
+              right: centerRight,
+              background: cornerGradient('0 100%')
+            }}
+          />
+          <div
+            data-testid="view-area-corner-mask-bottom-left"
+            style={{
+              ...cornerBase,
+              bottom: centerBottom,
+              left: centerLeft,
+              background: cornerGradient('100% 0')
+            }}
+          />
+          <div
+            data-testid="view-area-corner-mask-bottom-right"
+            style={{
+              ...cornerBase,
+              bottom: centerBottom,
+              right: centerRight,
+              background: cornerGradient('0 0')
+            }}
+          />
+        </>
+      )}
     </>
   )
 }

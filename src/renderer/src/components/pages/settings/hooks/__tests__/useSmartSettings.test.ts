@@ -108,9 +108,17 @@ describe('useSmartSettings', () => {
     expect(result.current.state.volume).toBe(20)
   })
 
-  test('backdrop and background fill settings stay mutually exclusive', () => {
-    const initial = { backdropEnabled: false, ambientFillEnabled: true } as any
-    const settings = { backdropEnabled: false, ambientFillEnabled: true } as any
+  test('backdrop and background fill settings stay mutually exclusive and enable corner mask', () => {
+    const initial = {
+      backdropEnabled: false,
+      ambientFillEnabled: true,
+      roundedCornerMaskEnabled: false
+    } as any
+    const settings = {
+      backdropEnabled: false,
+      ambientFillEnabled: true,
+      roundedCornerMaskEnabled: false
+    } as any
     const { result } = renderHook(() => useSmartSettings(initial, settings))
 
     act(() => {
@@ -119,15 +127,25 @@ describe('useSmartSettings', () => {
 
     expect(result.current.state.backdropEnabled).toBe(true)
     expect(result.current.state.ambientFillEnabled).toBe(false)
+    expect(result.current.state.roundedCornerMaskEnabled).toBe(true)
     expect(saveSettings).toHaveBeenLastCalledWith({
       backdropEnabled: true,
-      ambientFillEnabled: false
+      ambientFillEnabled: false,
+      roundedCornerMaskEnabled: true
     })
   })
 
-  test('background fill disables backdrop when enabled', () => {
-    const initial = { backdropEnabled: true, ambientFillEnabled: false } as any
-    const settings = { backdropEnabled: true, ambientFillEnabled: false } as any
+  test('background fill disables backdrop and enables corner mask', () => {
+    const initial = {
+      backdropEnabled: true,
+      ambientFillEnabled: false,
+      roundedCornerMaskEnabled: false
+    } as any
+    const settings = {
+      backdropEnabled: true,
+      ambientFillEnabled: false,
+      roundedCornerMaskEnabled: false
+    } as any
     const { result } = renderHook(() => useSmartSettings(initial, settings))
 
     act(() => {
@@ -136,9 +154,37 @@ describe('useSmartSettings', () => {
 
     expect(result.current.state.backdropEnabled).toBe(false)
     expect(result.current.state.ambientFillEnabled).toBe(true)
+    expect(result.current.state.roundedCornerMaskEnabled).toBe(true)
     expect(saveSettings).toHaveBeenLastCalledWith({
       backdropEnabled: false,
-      ambientFillEnabled: true
+      ambientFillEnabled: true,
+      roundedCornerMaskEnabled: true
+    })
+  })
+
+  test('corner mask can be turned back off after fill toggles enable it', () => {
+    const initial = {
+      backdropEnabled: false,
+      ambientFillEnabled: true,
+      roundedCornerMaskEnabled: true
+    } as any
+    const settings = {
+      backdropEnabled: false,
+      ambientFillEnabled: true,
+      roundedCornerMaskEnabled: true
+    } as any
+    const { result } = renderHook(() => useSmartSettings(initial, settings))
+
+    act(() => {
+      result.current.handleFieldChange('roundedCornerMaskEnabled', false)
+    })
+
+    expect(result.current.state.ambientFillEnabled).toBe(true)
+    expect(result.current.state.roundedCornerMaskEnabled).toBe(false)
+    expect(saveSettings).toHaveBeenLastCalledWith({
+      backdropEnabled: false,
+      ambientFillEnabled: true,
+      roundedCornerMaskEnabled: false
     })
   })
 

@@ -2,7 +2,7 @@ import { useTheme } from '@mui/material'
 import type { Config } from '@shared/types'
 import { PhoneType } from '@shared/types/Config'
 import { AudioCommand, CommandMapping } from '@shared/types/ProjectionEnums'
-import { aaContentArea, isClusterDisplayed, motoFillHex } from '@shared/utils'
+import { aaContentArea, isClusterDisplayed, motoFillEnabled, motoFillHex } from '@shared/utils'
 import { createProjectionWorker } from '@worker/createProjectionWorker'
 import type { KeyCommand, ProjectionWorker, UsbEvent, WorkerToUI } from '@worker/types'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -117,20 +117,20 @@ function WaitingProjectionPane({
     ? {
         tone: '#ef5350',
         adapter: 'Adapter missing',
-        phone: 'Phone search paused',
+        phone: 'iPhone search paused',
         phoneActive: false
       }
     : videoStarting || phoneLinked
       ? {
           tone: '#ffca28',
           adapter: 'Adapter found',
-          phone: 'Phone linked',
+          phone: 'iPhone linked',
           phoneActive: true
         }
       : {
           tone: '#4fc3f7',
           adapter: 'Adapter found',
-          phone: 'Searching for phone',
+          phone: 'Searching for iPhone',
           phoneActive: true
         }
   const pill = (label: string, active: boolean) => (
@@ -1085,7 +1085,9 @@ const CarplayComponent: React.FC<CarplayProps> = ({
 
   const visibleWidth = aaContent?.contentWidth ?? resolvedNegotiatedWidth
   const visibleHeight = aaContent?.contentHeight ?? resolvedNegotiatedHeight
+  const fillEnabled = motoFillEnabled(settings)
   const maskColor = motoFillHex(settings)
+  const roundedCornerMask = settings.roundedCornerMaskEnabled === true
 
   const touchHandlers = useProjectionMultiTouch(
     videoContainerRef,
@@ -1149,7 +1151,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
       />
 
       <ViewAreaMask
-        visible={receivingVideo && !rendererError}
+        visible={showProjectionOverlay && ((receivingVideo && !rendererError) || fillEnabled)}
         displayWidth={settings.projectionWidth}
         displayHeight={settings.projectionHeight}
         insets={{
@@ -1159,6 +1161,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
           right: settings.projectionViewAreaRight ?? 0
         }}
         color={maskColor}
+        cornerMask={roundedCornerMask}
       />
 
       <ProjectionSensorOverlay />

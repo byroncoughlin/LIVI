@@ -19,8 +19,10 @@ function applyMotoLinkedSettings(next: Record<string, unknown>, path: string, va
   if (value !== true) return
   if (path === 'backdropEnabled') {
     next.ambientFillEnabled = false
+    next.roundedCornerMaskEnabled = true
   } else if (path === 'ambientFillEnabled') {
     next.backdropEnabled = false
+    next.roundedCornerMaskEnabled = true
   }
 }
 

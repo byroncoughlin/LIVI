@@ -160,6 +160,7 @@ describe('settings schemas', () => {
       'backdropEnabled',
       'ambientFillEnabled',
       'ambientFillColor',
+      'roundedCornerMaskEnabled',
       '',
       ''
     ])
@@ -167,6 +168,7 @@ describe('settings schemas', () => {
       'Backdrop',
       'Ambient Fill',
       'Fill Color',
+      'Round Corners',
       'Tilt Calibration',
       'Graph History'
     ])

@@ -196,6 +196,7 @@ export type Config = {
   backdropEnabled?: boolean
   ambientFillEnabled?: boolean
   ambientFillColor?: string
+  roundedCornerMaskEnabled?: boolean
   leanOffset?: number
   pitchOffset?: number
 

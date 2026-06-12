@@ -69,6 +69,7 @@ export const DEFAULT_CONFIG: Config = {
   backdropEnabled: false,
   ambientFillEnabled: false,
   ambientFillColor: '#142321',
+  roundedCornerMaskEnabled: false,
   leanOffset: 0,
   pitchOffset: 0,
   startPage: 'home',

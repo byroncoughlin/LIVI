@@ -528,7 +528,7 @@ describe('Projection page', () => {
         'Adapter found'
       )
       expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
-        'Searching for phone'
+        'Searching for iPhone'
       )
     } finally {
       jest.useRealTimers()
@@ -545,7 +545,7 @@ describe('Projection page', () => {
       'Adapter missing'
     )
     expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
-      'Phone search paused'
+      'iPhone search paused'
     )
   })
 
@@ -576,6 +576,38 @@ describe('Projection page', () => {
     })
   })
 
+  test('renders low-cost fill and corner masks while waiting for video', () => {
+    statusState.isStreaming = false
+
+    render(
+      <Projection
+        {...baseProps({
+          settings: {
+            ...baseProps().settings,
+            projectionWidth: 800,
+            projectionHeight: 800,
+            projectionViewAreaTop: 118,
+            projectionViewAreaBottom: 118,
+            projectionViewAreaLeft: 118,
+            projectionViewAreaRight: 118,
+            ambientFillEnabled: true,
+            ambientFillColor: '#20364a',
+            roundedCornerMaskEnabled: true
+          }
+        })}
+      />
+    )
+
+    expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+    expect(screen.getByTestId('view-area-corner-mask-top-left')).toHaveStyle({
+      top: '14.75%',
+      left: '14.75%'
+    })
+    expect(screen.getByTestId('view-area-corner-mask-top-left').style.background).toContain(
+      '#20364a'
+    )
+  })
+
   test('hides waiting pane when video frames are present', () => {
     render(<Projection {...baseProps()} receivingVideo />)
 
@@ -590,7 +622,7 @@ describe('Projection page', () => {
       'Adapter found'
     )
     expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
-      'Phone linked'
+      'iPhone linked'
     )
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
@@ -640,7 +672,7 @@ describe('Projection page', () => {
       'Adapter found'
     )
     expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
-      'Searching for phone'
+      'Searching for iPhone'
     )
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })

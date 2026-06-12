@@ -4,7 +4,7 @@ import { useLiviStore } from '@store/store'
 import * as React from 'react'
 import { useLocation } from 'react-router'
 import { MOTO_CLEAR_GRAPH_HISTORY_EVENT } from './motoGraphEvents'
-import { MOTO_ARC_PCT, MOTO_CENTER_SQUARE_SIZE, MOTO_SQUARE_PCT } from './motoLayout'
+import { MOTO_ARC_PCT, MOTO_SQUARE_PCT } from './motoLayout'
 
 type MetricKey =
   | 'speed'
@@ -93,7 +93,6 @@ type MetricConfig = {
 
 const SQUARE_PCT = MOTO_SQUARE_PCT
 const ARC_PCT = MOTO_ARC_PCT
-const SQUARE_SIZE = MOTO_CENTER_SQUARE_SIZE
 const GRAPH_WINDOW_MS = 5 * 60 * 1000
 const GRAPH_MAX_AGE_MS = 8 * 60 * 60 * 1000
 const GRAPH_SAMPLE_MS = 1000
