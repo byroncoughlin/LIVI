@@ -24,11 +24,16 @@ describe('appRoutes', () => {
     expect(paths).toEqual(['/home', '/telemetry', '/cluster', '/media', '/camera', '/settings/*'])
   })
 
-  test('redirects the old media route to settings in the main app', () => {
+  test('redirects hidden moto host routes to settings in the main app', () => {
     const root = appRoutes[0]
     const mediaRoute = (root.children ?? []).find((r: any) => r.path === '/media')
+    const cameraRoute = (root.children ?? []).find((r: any) => r.path === '/camera')
 
     expect(mediaRoute?.element.props).toMatchObject({
+      to: '/settings',
+      replace: true
+    })
+    expect(cameraRoute?.element.props).toMatchObject({
       to: '/settings',
       replace: true
     })

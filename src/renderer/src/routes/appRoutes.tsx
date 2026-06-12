@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router'
 import { Layout } from '../components/layouts/Layout'
-import { Camera, Home, Telemetry } from '../components/pages'
+import { Home, Telemetry } from '../components/pages'
 import { SettingsPage } from '../components/pages/settings/SettingsPage'
 import { settingsRoutes } from './schemas/schema'
 import { RoutePath } from './types'
@@ -28,7 +28,7 @@ export const appRoutes = [
       },
       {
         path: `/${RoutePath.Camera}`,
-        element: <Camera />
+        element: <Navigate to={`/${RoutePath.Settings}`} replace />
       },
       {
         path: `/${RoutePath.Settings}/*`,
