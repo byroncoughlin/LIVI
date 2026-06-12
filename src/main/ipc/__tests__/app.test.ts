@@ -1,5 +1,6 @@
 import { registerAppIpc } from '@main/ipc/app'
 import { registerIpcHandle, registerIpcOn } from '@main/ipc/register'
+import { readSystemStats } from '@main/services/systemStats'
 import { isMacPlatform } from '@main/utils'
 import { broadcastToRenderers } from '@main/window/broadcast'
 import { getMainWindow } from '@main/window/createWindow'
@@ -28,6 +29,10 @@ jest.mock('@main/ipc/register', () => ({
   registerIpcOn: jest.fn()
 }))
 
+jest.mock('@main/services/systemStats', () => ({
+  readSystemStats: jest.fn()
+}))
+
 jest.mock('child_process', () => ({
   spawn: jest.fn()
 }))
@@ -36,6 +41,7 @@ const mockedGetMainWindow = getMainWindow as jest.Mock
 const mockedIsMacPlatform = isMacPlatform as jest.Mock
 const mockedRegisterIpcHandle = registerIpcHandle as jest.Mock
 const mockedRegisterIpcOn = registerIpcOn as jest.Mock
+const mockedReadSystemStats = readSystemStats as jest.Mock
 const mockedSpawn = spawn as jest.Mock
 const mockedBroadcastToRenderers = broadcastToRenderers as jest.Mock
 
@@ -85,7 +91,13 @@ describe('registerAppIpc', () => {
     const registeredOn = mockedRegisterIpcOn.mock.calls.map((c) => c[0])
 
     expect(registeredHandles).toEqual(
-      expect.arrayContaining(['quit', 'app:quitApp', 'app:restartApp', 'app:openExternal'])
+      expect.arrayContaining([
+        'quit',
+        'app:quitApp',
+        'app:restartApp',
+        'app:openExternal',
+        'app:systemStats'
+      ])
     )
     expect(registeredOn).toEqual(expect.arrayContaining(['app:user-activity', 'app:media-key']))
   })
@@ -460,5 +472,32 @@ describe('registerAppIpc', () => {
       ok: false,
       error: 'Empty URL'
     })
+  })
+
+  test('app:systemStats returns the current system stats', async () => {
+    mockedReadSystemStats.mockResolvedValue({ cpu: 42, cores: [40, 44] })
+
+    const runtimeState = { isQuitting: false, suppressNextFsSync: false } as never
+    const services = { usbService: {} } as never
+
+    registerAppIpc(runtimeState, services)
+
+    const systemStatsHandler = getHandle('app:systemStats') as (() => Promise<unknown>) | undefined
+
+    await expect(systemStatsHandler?.()).resolves.toEqual({ cpu: 42, cores: [40, 44] })
+    expect(mockedReadSystemStats).toHaveBeenCalledTimes(1)
+  })
+
+  test('app:systemStats returns an error payload when stats fail', async () => {
+    mockedReadSystemStats.mockRejectedValue(new Error('proc unavailable'))
+
+    const runtimeState = { isQuitting: false, suppressNextFsSync: false } as never
+    const services = { usbService: {} } as never
+
+    registerAppIpc(runtimeState, services)
+
+    const systemStatsHandler = getHandle('app:systemStats') as (() => Promise<unknown>) | undefined
+
+    await expect(systemStatsHandler?.()).resolves.toEqual({ error: 'proc unavailable' })
   })
 })

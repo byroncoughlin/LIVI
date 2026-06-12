@@ -1,4 +1,5 @@
 import { registerIpcHandle, registerIpcOn } from '@main/ipc/register'
+import { readSystemStats } from '@main/services/systemStats'
 import { compositorRestart } from '@main/services/video/GstVideo'
 import { runtimeStateProps, ServicesProps } from '@main/types'
 import { isMacPlatform } from '@main/utils'
@@ -100,5 +101,13 @@ export function registerAppIpc(runtimeState: runtimeStateProps, services: Servic
 
     await shell.openExternal(url)
     return { ok: true }
+  })
+
+  registerIpcHandle('app:systemStats', async () => {
+    try {
+      return await readSystemStats()
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
   })
 }

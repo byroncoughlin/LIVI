@@ -263,6 +263,7 @@ const appApi = {
   restartApp: (): Promise<void> => ipcRenderer.invoke('app:restartApp'),
   openExternal: (url: string): Promise<{ ok: boolean; error?: string }> =>
     ipcRenderer.invoke('app:openExternal', url),
+  systemStats: (): Promise<unknown> => ipcRenderer.invoke('app:systemStats'),
 
   notifyUserActivity: (): void => {
     ipcRenderer.send('app:user-activity')

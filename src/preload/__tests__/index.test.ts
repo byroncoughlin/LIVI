@@ -249,6 +249,7 @@ describe('preload api bridge', () => {
     await app.quitApp()
     await app.restartApp()
     await app.openExternal('https://example.com')
+    await app.systemStats()
     app.notifyUserActivity()
 
     expect(ipcRendererMock.invoke).toHaveBeenCalledWith('app:getVersion')
@@ -263,6 +264,7 @@ describe('preload api bridge', () => {
     expect(ipcRendererMock.invoke).toHaveBeenCalledWith('app:quitApp')
     expect(ipcRendererMock.invoke).toHaveBeenCalledWith('app:restartApp')
     expect(ipcRendererMock.invoke).toHaveBeenCalledWith('app:openExternal', 'https://example.com')
+    expect(ipcRendererMock.invoke).toHaveBeenCalledWith('app:systemStats')
     expect(ipcRendererMock.send).toHaveBeenCalledWith('app:user-activity')
   })
 

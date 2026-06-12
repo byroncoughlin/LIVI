@@ -98,6 +98,19 @@ type DevToolsUploadResult = {
 }
 
 declare global {
+  type SystemStats = {
+    cpu?: number
+    cores?: number[]
+    memUsedMb?: number | null
+    memTotalMb?: number | null
+    memPct?: number | null
+    swapUsedMb?: number | null
+    tempC?: number | null
+    load?: number[] | null
+    uptime?: number | null
+    error?: string
+  }
+
   interface Navigator {
     usb: {
       getDevices(): Promise<USBDevice[]>
@@ -190,6 +203,7 @@ declare global {
       notifyUserActivity(): void
       quitApp(): Promise<void>
       restartApp(): Promise<void>
+      systemStats(): Promise<SystemStats>
       getVersion(): Promise<string>
       getLatestRelease(): Promise<{ version?: string; url?: string }>
       performUpdate(imageUrl?: string): Promise<void>

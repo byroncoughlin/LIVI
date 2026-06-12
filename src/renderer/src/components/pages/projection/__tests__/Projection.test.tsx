@@ -184,6 +184,19 @@ describe('Projection page', () => {
         unlistenForEvents: jest.fn()
       }
     }
+    ;(window as any).app = {
+      systemStats: jest.fn().mockResolvedValue({
+        cpu: 12,
+        cores: [10, 14],
+        memUsedMb: 512,
+        memTotalMb: 2048,
+        memPct: 25,
+        swapUsedMb: 0,
+        tempC: 43.2,
+        load: [0.1, 0.2, 0.3],
+        uptime: 3600
+      })
+    }
   })
 
   test('usb plugged sets dongle-connected state (main owns session start)', async () => {
@@ -2049,6 +2062,74 @@ describe('Projection page', () => {
     })
 
     expect(setNavVideoOverlayActive).toHaveBeenCalledWith(false)
+  })
+
+  test('hidden system monitor opens on two-finger hold and polls only while open', async () => {
+    jest.useFakeTimers()
+    const dispatchPointer = (type: string, pointerId: number, target: EventTarget = window): void => {
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      Object.defineProperty(event, 'pointerId', { value: pointerId })
+      target.dispatchEvent(event)
+    }
+    const systemStats = jest.fn().mockResolvedValue({
+      cpu: 42,
+      cores: [20, 40],
+      memUsedMb: 1000,
+      memTotalMb: 2000,
+      memPct: 50,
+      swapUsedMb: 0,
+      tempC: 45.7,
+      load: [1, 0.5, 0.25],
+      uptime: 1235
+    })
+    ;(window as any).app.systemStats = systemStats
+
+    render(<Projection {...baseProps()} />)
+
+    expect(screen.queryByTestId('projection-system-monitor')).not.toBeInTheDocument()
+    expect(systemStats).not.toHaveBeenCalled()
+
+    dispatchPointer('pointerdown', 1)
+    dispatchPointer('pointerdown', 2)
+    act(() => {
+      jest.advanceTimersByTime(999)
+    })
+
+    expect(screen.queryByTestId('projection-system-monitor')).not.toBeInTheDocument()
+    expect(systemStats).not.toHaveBeenCalled()
+
+    await act(async () => {
+      jest.advanceTimersByTime(1)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(screen.getByTestId('projection-system-monitor')).toBeInTheDocument()
+    expect(systemStats).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('projection-system-monitor')).toHaveTextContent('42')
+
+    dispatchPointer('pointerup', 1)
+    dispatchPointer('pointerup', 2)
+
+    await act(async () => {
+      jest.advanceTimersByTime(1000)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(systemStats).toHaveBeenCalledTimes(2)
+
+    act(() => {
+      dispatchPointer('pointerdown', 3, screen.getByTestId('projection-system-monitor-backdrop'))
+    })
+    expect(screen.queryByTestId('projection-system-monitor')).not.toBeInTheDocument()
+
+    act(() => {
+      jest.advanceTimersByTime(3000)
+    })
+
+    expect(systemStats).toHaveBeenCalledTimes(2)
+    jest.useRealTimers()
   })
 })
 
