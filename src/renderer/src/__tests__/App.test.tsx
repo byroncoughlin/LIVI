@@ -120,6 +120,17 @@ describe('App', () => {
     expect(navigateMock).not.toHaveBeenCalled()
   })
 
+  test('maps hidden stock startup pages back to home', () => {
+    liviState.settings = {
+      ...liviState.settings,
+      startPage: 'media'
+    }
+
+    render(<App />)
+
+    expect(navigateMock).not.toHaveBeenCalledWith('/media', expect.anything())
+  })
+
   test('sets navEl and contentEl via app context when they are missing', () => {
     const onSetAppContext = jest.fn()
 

@@ -14,10 +14,10 @@ import { broadcastMediaKey } from './utils/broadcastMediaKey'
 
 const START_PAGE_ROUTE: Record<string, string> = {
   home: ROUTES.HOME,
-  media: ROUTES.MEDIA,
-  camera: ROUTES.CAMERA,
   settings: ROUTES.SETTINGS,
-  telemetry: ROUTES.TELEMETRY
+  media: ROUTES.HOME,
+  camera: ROUTES.HOME,
+  telemetry: ROUTES.HOME
 }
 
 function AppInner() {
