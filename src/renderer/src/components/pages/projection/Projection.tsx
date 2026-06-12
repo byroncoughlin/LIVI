@@ -29,6 +29,19 @@ const positiveOrDefault = (value: unknown, fallback: number): number =>
 const nonNegative = (value: unknown): number =>
   typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0
 
+const hasLinkedPhoneTransport = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false
+  const state = value as Record<string, unknown>
+  return (
+    state.wiredPhoneDetected === true ||
+    state.wirelessPhoneDetected === true ||
+    state.wiredPhoneActive === true ||
+    state.wirelessPhoneActive === true ||
+    state.active === 'aa' ||
+    state.active === 'cp'
+  )
+}
+
 interface CarplayProps {
   receivingVideo: boolean
   setReceivingVideo: (v: boolean) => void
@@ -287,6 +300,8 @@ const CarplayComponent: React.FC<CarplayProps> = ({
   const hasStartedRef = useRef(false)
   const [rendererError] = useState<string | null>(null)
   const [projectionSessionActive, setProjectionSessionActive] = useState(false)
+  const [donglePhoneLinked, setDonglePhoneLinked] = useState(false)
+  const [transportPhoneLinked, setTransportPhoneLinked] = useState(false)
   const lastNonCarplayPathRef = useRef<string | null>(null)
   const lastNonClusterPathRef = useRef<string | null>(null)
   const autoSwitchedRef = useRef(false)
@@ -429,6 +444,20 @@ const CarplayComponent: React.FC<CarplayProps> = ({
       navigate(HOST_UI_ROUTE, { replace: true })
     }
   }, [location.pathname, navigate])
+
+  useEffect(() => {
+    let disposed = false
+    window.projection.ipc
+      .getTransportState?.()
+      .then((state) => {
+        if (!disposed && hasLinkedPhoneTransport(state)) setTransportPhoneLinked(true)
+      })
+      .catch(() => {})
+
+    return () => {
+      disposed = true
+    }
+  }, [])
 
   const applyAttention = useCallback(
     (p: AttentionPayload) => {
@@ -582,6 +611,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
       setReceivingVideo(false)
       setStreaming(false)
       setDongleConnected(false)
+      setDonglePhoneLinked(false)
       hasStartedRef.current = false
       resetInfo()
       await window.projection.ipc.stop()
@@ -651,6 +681,11 @@ const CarplayComponent: React.FC<CarplayProps> = ({
       const t = typeof d.type === 'string' ? d.type : undefined
 
       switch (t) {
+        case 'transportState': {
+          setTransportPhoneLinked(hasLinkedPhoneTransport(d.payload))
+          break
+        }
+
         case 'bluetoothPairedList': {
           const raw =
             typeof d.payload === 'string'
@@ -863,6 +898,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
           const phoneType = (d as { phoneType?: number }).phoneType
           const useAa =
             phoneType !== undefined ? phoneType === PhoneType.AndroidAuto : wirelessAaEnabled
+          if (phoneType !== undefined) setDonglePhoneLinked(true)
           if (useAa) {
             setProjectionSessionActive(true)
             setAaActive(true)
@@ -879,6 +915,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
 
         case 'unplugged': {
           setProjectionSessionActive(false)
+          setDonglePhoneLinked(false)
           setStreaming(false)
           setAaActive(false)
           setDongleConnected(false)
@@ -890,6 +927,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
 
         case 'failure': {
           setProjectionSessionActive(false)
+          setDonglePhoneLinked(false)
           setStreaming(false)
           setAaActive(false)
           setDongleConnected(false)
@@ -959,8 +997,12 @@ const CarplayComponent: React.FC<CarplayProps> = ({
 
   const inProjection = pathname === '/'
   const showProjectionOverlay = inProjection || navVideoOverlayActive
+  const phoneProjectionAvailable = donglePhoneLinked || transportPhoneLinked
   const showWaitingProjectionPane =
-    !receivingVideo || Boolean(rendererError) || !projectionSessionActive
+    !receivingVideo ||
+    Boolean(rendererError) ||
+    !projectionSessionActive ||
+    !phoneProjectionAvailable
 
   const resolvedNegotiatedWidth = negotiatedWidth ?? 0
   const resolvedNegotiatedHeight = negotiatedHeight ?? 0

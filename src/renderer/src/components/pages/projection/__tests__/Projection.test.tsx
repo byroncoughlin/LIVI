@@ -1,4 +1,5 @@
 import { AudioCommand, CommandMapping } from '@shared/types/ProjectionEnums'
+import { PhoneType } from '@shared/types/Config'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { Projection } from '../Projection'
 
@@ -150,6 +151,18 @@ describe('Projection page', () => {
         stop: jest.fn().mockResolvedValue(undefined),
         sendFrame: jest.fn().mockResolvedValue(undefined),
         setVisible: jest.fn().mockResolvedValue(undefined),
+        getTransportState: jest.fn().mockResolvedValue({
+          active: 'dongle',
+          targetTransport: 'dongle',
+          targetMode: 'wired',
+          switchPending: false,
+          dongleDetected: true,
+          wiredPhoneDetected: false,
+          wirelessPhoneDetected: false,
+          wiredPhoneActive: false,
+          wirelessPhoneActive: false,
+          preference: 'dongle'
+        }),
         onAudioChunk: jest.fn(),
         offAudioChunk: jest.fn(),
         onEvent: jest.fn((cb: AnyFn) => (onEventCb = cb)),
@@ -421,10 +434,21 @@ describe('Projection page', () => {
     expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
   })
 
-  test('hides waiting pane when projection activity is confirmed', () => {
+  test('keeps waiting pane visible when dongle video is active but no phone is linked', () => {
     render(<Projection {...baseProps()} receivingVideo />)
 
     act(() => {
+      onEventCb?.(null, { type: 'projectionActive' })
+    })
+
+    expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+  })
+
+  test('hides waiting pane when CarPlay phone and projection activity are confirmed', () => {
+    render(<Projection {...baseProps()} receivingVideo />)
+
+    act(() => {
+      onEventCb?.(null, { type: 'plugged', phoneType: PhoneType.CarPlay })
       onEventCb?.(null, { type: 'projectionActive' })
     })
 
