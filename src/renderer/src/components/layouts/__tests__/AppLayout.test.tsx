@@ -94,6 +94,8 @@ describe('AppLayout', () => {
     const root = container.querySelector<HTMLElement>('#main')
     const shell = container.querySelector<HTMLElement>('#round-host-shell')
     expect(root?.style.display).toBe('grid')
+    expect(root?.style.gridTemplateColumns).toBe('1fr')
+    expect(root?.style.gridTemplateRows).toBe('1fr')
     expect(shell).toBeInTheDocument()
     expect(shell).toHaveStyle({
       width: 'min(591px, calc(100vw - 16px))',

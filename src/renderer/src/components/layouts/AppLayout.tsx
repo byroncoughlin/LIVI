@@ -133,6 +133,8 @@ export const AppLayout: FC<PropsWithChildren<AppLayoutProps>> = ({
         height: '100dvh',
         touchAction: 'none',
         display: useRoundHostShell ? 'grid' : 'flex',
+        gridTemplateColumns: useRoundHostShell ? '1fr' : undefined,
+        gridTemplateRows: useRoundHostShell ? '1fr' : undefined,
         placeItems: useRoundHostShell ? 'center' : undefined,
         flexDirection: useRoundHostShell ? undefined : layoutDirection
       }}
