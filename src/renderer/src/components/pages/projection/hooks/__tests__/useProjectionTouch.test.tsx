@@ -34,6 +34,7 @@ describe('useProjectionMultiTouch', () => {
       pointerType: 'touch',
       clientX: 50,
       clientY: 50,
+      preventDefault: jest.fn(),
       ...options
     }) as React.PointerEvent<HTMLDivElement>
 
@@ -55,6 +56,7 @@ describe('useProjectionMultiTouch', () => {
     const { result } = renderHook(() => useProjectionMultiTouch(videoRef))
 
     result.current.onPointerDown(ptrEvent(target, { pointerType: 'mouse' }))
+    expect(target.setPointerCapture).toHaveBeenCalledWith(1)
     expect(sendTouch).toHaveBeenCalledWith(0.5, 0.5, TouchAction.Down)
 
     result.current.onPointerMove(ptrEvent(target, { pointerType: 'mouse', clientX: 60 }))
@@ -62,6 +64,24 @@ describe('useProjectionMultiTouch', () => {
 
     result.current.onPointerUp(ptrEvent(target, { pointerType: 'mouse', clientX: 70 }))
     expect(sendTouch).toHaveBeenCalledWith(0.7, 0.5, TouchAction.Up)
+    expect(target.releasePointerCapture).toHaveBeenCalledWith(1)
+  })
+
+  test('uses last known mouse point when captured pointer ends out of bounds', () => {
+    const target = createTarget()
+    const videoRef = createRef<HTMLElement>()
+    videoRef.current = target
+
+    const { result } = renderHook(() => useProjectionMultiTouch(videoRef))
+
+    result.current.onPointerDown(ptrEvent(target, { pointerType: 'mouse', clientX: 40 }))
+    result.current.onPointerMove(ptrEvent(target, { pointerType: 'mouse', clientX: 60 }))
+    result.current.onPointerUp(
+      ptrEvent(target, { pointerType: 'mouse', clientX: 130, clientY: 130 })
+    )
+
+    expect(sendTouch).toHaveBeenLastCalledWith(0.6, 0.5, TouchAction.Up)
+    expect(target.releasePointerCapture).toHaveBeenCalledWith(1)
   })
 
   test('ignores mouse move/up when no active mouse down', () => {

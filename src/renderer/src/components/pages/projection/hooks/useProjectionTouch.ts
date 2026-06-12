@@ -85,6 +85,7 @@ export const useProjectionMultiTouch = (
   const freeSlots = useRef<number[]>([])
   const nextSlot = useRef(0)
   const mouseDown = useRef(false)
+  const mousePos = useRef<{ x: number; y: number } | null>(null)
 
   const alloc = useCallback((pid: number) => {
     const old = slotByPointerId.current.get(pid)
@@ -122,13 +123,16 @@ export const useProjectionMultiTouch = (
 
   const onPointerDown = useCallback<Handlers['onPointerDown']>(
     (e) => {
+      e.preventDefault()
       const el = e.currentTarget as HTMLElement
       const p = norm(el, videoRef, e.clientX, e.clientY, transform)
       if (!p) return
       const { x, y } = p
 
       if (e.pointerType === 'mouse') {
+        el.setPointerCapture?.(e.pointerId)
         mouseDown.current = true
+        mousePos.current = { x, y }
         window.projection.ipc.sendTouch(x, y, TouchAction.Down)
         return
       }
@@ -145,6 +149,7 @@ export const useProjectionMultiTouch = (
 
   const onPointerMove = useCallback<Handlers['onPointerMove']>(
     (e) => {
+      e.preventDefault()
       const el = e.currentTarget as HTMLElement
       const p = norm(el, videoRef, e.clientX, e.clientY, transform)
       if (!p) return
@@ -152,6 +157,7 @@ export const useProjectionMultiTouch = (
 
       if (e.pointerType === 'mouse') {
         if (!mouseDown.current) return
+        mousePos.current = { x, y }
         window.projection.ipc.sendTouch(x, y, TouchAction.Move)
         return
       }
@@ -166,19 +172,26 @@ export const useProjectionMultiTouch = (
 
   const finishPointer = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      e.preventDefault()
       const el = e.currentTarget as HTMLElement
       const p = norm(el, videoRef, e.clientX, e.clientY, transform)
 
       if (e.pointerType === 'mouse') {
         if (!mouseDown.current) return
-        if (!p) {
+        const last = mousePos.current
+        const x = p?.x ?? last?.x
+        const y = p?.y ?? last?.y
+        if (x === undefined || y === undefined) {
           mouseDown.current = false
+          mousePos.current = null
+          el.releasePointerCapture?.(e.pointerId)
           return
         }
 
-        const { x, y } = p
         mouseDown.current = false
+        mousePos.current = null
         window.projection.ipc.sendTouch(x, y, TouchAction.Up)
+        el.releasePointerCapture?.(e.pointerId)
         return
       }
 
@@ -216,7 +229,9 @@ export const useProjectionMultiTouch = (
     [finishPointer]
   )
 
-  const onPointerOut = useCallback<Handlers['onPointerOut']>(() => {}, [])
+  const onPointerOut = useCallback<Handlers['onPointerOut']>((e) => {
+    e.preventDefault()
+  }, [])
   const onContextMenu = useCallback<Handlers['onContextMenu']>((e) => e.preventDefault(), [])
 
   return useMemo(
