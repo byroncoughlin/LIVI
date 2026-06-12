@@ -116,8 +116,6 @@ function WaitingProjectionPane({
   const status = !adapterFound
     ? {
         tone: '#ef5350',
-        title: 'Adapter Offline',
-        detail: 'Waiting for the CarPlay adapter',
         adapter: 'Adapter missing',
         phone: 'Phone search paused',
         phoneActive: false
@@ -125,16 +123,12 @@ function WaitingProjectionPane({
     : videoStarting || phoneLinked
       ? {
           tone: '#ffca28',
-          title: 'Starting CarPlay',
-          detail: 'Phone link found - waiting for video',
           adapter: 'Adapter found',
           phone: 'Phone linked',
           phoneActive: true
         }
       : {
           tone: '#4fc3f7',
-          title: 'Ready for CarPlay',
-          detail: 'Adapter found - searching for phone',
           adapter: 'Adapter found',
           phone: 'Searching for phone',
           phoneActive: true
@@ -249,33 +243,9 @@ function WaitingProjectionPane({
             borderRadius: 2,
             background: status.tone,
             boxShadow: `0 0 18px ${status.tone}99`,
-            margin: '24px 0 18px'
+            margin: '24px 0'
           }}
         />
-        <div
-          data-testid="projection-waiting-status-title"
-          style={{
-            color: '#f8fafc',
-            fontSize: 24,
-            fontWeight: 900,
-            lineHeight: 1.1,
-            marginBottom: 6
-          }}
-        >
-          {status.title}
-        </div>
-        <div
-          data-testid="projection-waiting-status-detail"
-          style={{
-            color: 'rgba(255,255,255,0.62)',
-            fontSize: 14,
-            fontWeight: 600,
-            lineHeight: 1.25,
-            marginBottom: 24
-          }}
-        >
-          {status.detail}
-        </div>
         <div
           data-testid="projection-waiting-status-pills"
           style={{

@@ -524,12 +524,6 @@ describe('Projection page', () => {
         backgroundColor: '#02050a'
       })
       expect(screen.getByTestId('projection-waiting-clock')).toHaveTextContent('5:07')
-      expect(screen.getByTestId('projection-waiting-status-title')).toHaveTextContent(
-        'Ready for CarPlay'
-      )
-      expect(screen.getByTestId('projection-waiting-status-detail')).toHaveTextContent(
-        'Adapter found - searching for phone'
-      )
       expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
         'Adapter found'
       )
@@ -547,14 +541,11 @@ describe('Projection page', () => {
 
     render(<Projection {...baseProps({ receivingVideo: false })} />)
 
-    expect(screen.getByTestId('projection-waiting-status-title')).toHaveTextContent(
-      'Adapter Offline'
-    )
-    expect(screen.getByTestId('projection-waiting-status-detail')).toHaveTextContent(
-      'Waiting for the CarPlay adapter'
-    )
     expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
       'Adapter missing'
+    )
+    expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
+      'Phone search paused'
     )
   })
 
@@ -595,8 +586,11 @@ describe('Projection page', () => {
     render(<Projection {...baseProps({ receivingVideo: false })} />)
 
     expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
-    expect(screen.getByTestId('projection-waiting-status-title')).toHaveTextContent(
-      'Starting CarPlay'
+    expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
+      'Adapter found'
+    )
+    expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
+      'Phone linked'
     )
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
@@ -642,8 +636,11 @@ describe('Projection page', () => {
     })
 
     expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
-    expect(screen.getByTestId('projection-waiting-status-title')).toHaveTextContent(
-      'Ready for CarPlay'
+    expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
+      'Adapter found'
+    )
+    expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
+      'Searching for phone'
     )
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
