@@ -1678,7 +1678,7 @@ export function ProjectionSensorOverlay() {
       style={{
         position: 'absolute',
         inset: 0,
-        zIndex: 8,
+        zIndex: 10,
         pointerEvents: 'none'
       }}
     >
