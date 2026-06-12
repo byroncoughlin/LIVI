@@ -1157,7 +1157,7 @@ function RideDynamicsPanel({
           <line x1={93} y1={90} x2={114} y2={90} stroke="#ffd700" strokeWidth={3} strokeLinecap="round" />
           <circle cx={84} cy={90} r={2.6} fill="#ffd700" />
           <text x={84} y={190} textAnchor="middle" fill={leanColor(absLean)} fontSize={34} fontWeight="900" fontFamily="monospace">
-            {absLean}\u00b0{side}
+            {`${absLean}\u00b0${side}`}
           </text>
           <text x={84} y={205} textAnchor="middle" fill="#cfcfcf" fontSize={12} fontWeight={800} letterSpacing={3} fontFamily="monospace">
             LEAN
@@ -1240,7 +1240,7 @@ function CylinderHeadsPanel({ telemetry, actions }: { telemetry: MotoTelemetry; 
           <span style={{ color: temp !== null ? z.color : '#fff', fontSize: 40, fontWeight: 900, fontFamily: 'monospace', lineHeight: 1 }}>
             {temp !== null ? Math.round(temp) : '--'}
           </span>
-          <span style={{ color: '#bbb', fontSize: 16, fontWeight: 700, fontFamily: 'monospace' }}>\u00b0C</span>
+          <span style={{ color: '#bbb', fontSize: 16, fontWeight: 700, fontFamily: 'monospace' }}>{'\u00b0C'}</span>
         </div>
         <div style={{ color: temp !== null ? z.color : '#777', fontSize: 14, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>
           {z.label}
@@ -1257,7 +1257,7 @@ function CylinderHeadsPanel({ telemetry, actions }: { telemetry: MotoTelemetry; 
       {side('L', telemetry.chtLeftC, telemetry.chtPeak.left)}
       <div style={{ flex: '0 0 124px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, paddingTop: 20 }}>
         <span style={{ color: '#888', fontSize: 11, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>{'\u25c4 BOXER \u25ba'}</span>
-        <span style={{ color: '#888', fontSize: 12, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace', marginTop: 4 }}>\u0394T</span>
+        <span style={{ color: '#888', fontSize: 12, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace', marginTop: 4 }}>{'\u0394T'}</span>
         <span style={{ color: deltaColor, fontSize: 30, fontWeight: 900, fontFamily: 'monospace', lineHeight: 1 }}>
           {delta !== null ? `${delta}\u00b0` : '\u2014'}
         </span>
@@ -1599,7 +1599,7 @@ function GraphPane({
             <g key={`thr-${i}`}>
               <line x1={cx} y1={y} x2={cx + cw} y2={y} stroke={z.color} strokeWidth={1} strokeDasharray="4 4" opacity={0.55} />
               <text x={cx + cw - 4} y={y - 5} textAnchor="end" fill={z.color} fontSize={14} fontWeight={800} fontFamily="monospace">
-                {z.label} {cfg.fmtVal(thr)}\u00b0
+                {`${z.label} ${cfg.fmtVal(thr)}\u00b0`}
               </text>
             </g>
           )
