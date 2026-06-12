@@ -1158,12 +1158,9 @@ const CarplayComponent: React.FC<CarplayProps> = ({
 
   const inProjection = pathname === '/'
   const showProjectionOverlay = inProjection || navVideoOverlayActive
-  const phoneProjectionAvailable = donglePhoneLinked || transportPhoneLinked
   const showWaitingProjectionPane =
     !receivingVideo ||
-    Boolean(rendererError) ||
-    !projectionSessionActive ||
-    !phoneProjectionAvailable
+    Boolean(rendererError)
 
   const resolvedNegotiatedWidth = negotiatedWidth ?? 0
   const resolvedNegotiatedHeight = negotiatedHeight ?? 0

@@ -507,42 +507,42 @@ describe('Projection page', () => {
     }
   })
 
-  test('keeps waiting pane visible over dongle video until a projection session is active', () => {
+  test('hides waiting pane when video frames are present', () => {
     render(<Projection {...baseProps()} receivingVideo />)
 
-    expect(screen.getByTestId('projection-waiting-pane')).toHaveStyle({ zIndex: '2' })
+    expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
   })
 
-  test('keeps waiting pane visible after dongle plugged event without linked phone info', () => {
+  test('keeps waiting pane hidden after dongle plugged event when video is present', () => {
     render(<Projection {...baseProps()} receivingVideo />)
 
     act(() => {
       onEventCb?.(null, { type: 'plugged' })
     })
 
-    expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+    expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
   })
 
-  test('keeps waiting pane visible when dongle info only has a remembered phone mac', () => {
+  test('keeps waiting pane hidden when dongle info only has a remembered phone mac', () => {
     const { rerender } = render(<Projection {...baseProps()} receivingVideo />)
 
     liviState.boxInfo = { btMacAddr: 'AA:BB:CC:DD:EE:FF' }
     rerender(<Projection {...baseProps()} receivingVideo />)
 
-    expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+    expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
   })
 
-  test('keeps waiting pane visible when dongle video is active but no phone is linked', () => {
+  test('keeps waiting pane hidden when dongle video is active but no phone is linked', () => {
     render(<Projection {...baseProps()} receivingVideo />)
 
     act(() => {
       onEventCb?.(null, { type: 'projectionActive' })
     })
 
-    expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+    expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
   })
 
-  test('keeps waiting pane visible for unsupported dongle startup phone type', () => {
+  test('keeps waiting pane hidden for unsupported dongle startup phone type once video is present', () => {
     render(<Projection {...baseProps()} receivingVideo />)
 
     act(() => {
@@ -550,7 +550,7 @@ describe('Projection page', () => {
       onEventCb?.(null, { type: 'projectionActive' })
     })
 
-    expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+    expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
   })
 
   test('hides waiting pane when CarPlay phone and projection activity are confirmed', () => {
@@ -574,7 +574,7 @@ describe('Projection page', () => {
     expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
   })
 
-  test('projectionActive refresh clears stale dongle phone hint when transport reports no phone', async () => {
+  test('projectionActive refresh does not restore waiting pane while video is present', async () => {
     render(<Projection {...baseProps()} receivingVideo />)
 
     act(() => {
@@ -583,7 +583,7 @@ describe('Projection page', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+      expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
     })
   })
 
