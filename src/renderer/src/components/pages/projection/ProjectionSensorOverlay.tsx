@@ -867,7 +867,7 @@ function ChtGauge({
           fontWeight="bold"
           fontFamily="sans-serif"
         >
-          C
+          {'\u00b0C'}
         </text>
       </svg>
     </button>
