@@ -336,61 +336,6 @@ export const motoSettingsSchema: SettingsNode<Config> = {
               displayValue: true
             }
           ]
-        },
-        {
-          type: 'route',
-          label: 'Safe Area',
-          labelKey: 'settings.safeArea',
-          route: 'safeArea',
-          path: '',
-          children: [
-            {
-              type: 'number',
-              label: 'Top',
-              labelKey: 'settings.top',
-              path: 'projectionSafeAreaTop',
-              min: SAFE_AREA_MIN,
-              max: SAFE_AREA_MAX_HEIGHT,
-              step: AREA_STEP,
-              displayValue: true
-            },
-            {
-              type: 'number',
-              label: 'Bottom',
-              labelKey: 'settings.bottom',
-              path: 'projectionSafeAreaBottom',
-              min: SAFE_AREA_MIN,
-              max: SAFE_AREA_MAX_HEIGHT,
-              step: AREA_STEP,
-              displayValue: true
-            },
-            {
-              type: 'number',
-              label: 'Left',
-              labelKey: 'settings.left',
-              path: 'projectionSafeAreaLeft',
-              min: SAFE_AREA_MIN,
-              max: SAFE_AREA_MAX_WIDTH,
-              step: AREA_STEP,
-              displayValue: true
-            },
-            {
-              type: 'number',
-              label: 'Right',
-              labelKey: 'settings.right',
-              path: 'projectionSafeAreaRight',
-              min: SAFE_AREA_MIN,
-              max: SAFE_AREA_MAX_WIDTH,
-              step: AREA_STEP,
-              displayValue: true
-            },
-            {
-              type: 'checkbox',
-              label: 'Draw Outside',
-              labelKey: 'settings.drawOutside',
-              path: 'projectionSafeAreaDrawOutside'
-            }
-          ]
         }
       ]
     },

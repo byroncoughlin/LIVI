@@ -176,6 +176,32 @@ describe('settings schemas', () => {
     })
   })
 
+  test('moto projection settings keep the compact round dashboard controls', () => {
+    if (settingsSchema.type !== 'route') {
+      throw new Error('settingsSchema must be a route node')
+    }
+
+    const projection = (settingsSchema.children as any[]).find(
+      (child) => child.route === 'projection'
+    )
+
+    expect(projection.children.map((child: any) => child.label)).toEqual([
+      'FPS',
+      'DPI',
+      'View Area'
+    ])
+    expect(projection.children.map((child: any) => child.path)).toEqual([
+      'projectionFps',
+      'projectionDpi',
+      ''
+    ])
+    expect(projection.children.map((child: any) => child.route)).toEqual([
+      undefined,
+      undefined,
+      'viewArea'
+    ])
+  })
+
   test('active moto settings omit unused generic controls from the round dashboard', () => {
     const paths = collectPaths(settingsSchema)
 
@@ -191,7 +217,12 @@ describe('settings schemas', () => {
         'audioInputDevice',
         'audioInputDeviceLabel',
         'micType',
-        'kiosk.main'
+        'kiosk.main',
+        'projectionSafeAreaTop',
+        'projectionSafeAreaBottom',
+        'projectionSafeAreaLeft',
+        'projectionSafeAreaRight',
+        'projectionSafeAreaDrawOutside'
       ])
     )
   })
