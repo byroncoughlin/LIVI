@@ -67,4 +67,22 @@ describe('settings schemas', () => {
     expect(settingsRoutes?.path).toBe('new-settings')
     expect(Array.isArray(settingsRoutes?.children)).toBe(true)
   })
+
+  test('moto connection settings expose Wi-Fi frequency like the round dashboard', () => {
+    if (settingsSchema.type !== 'route') {
+      throw new Error('settingsSchema must be a route node')
+    }
+
+    const connection = (settingsSchema.children as any[]).find(
+      (child) => child.route === 'connection'
+    )
+    const wifi = connection.children.find((child: any) => child.path === 'wifiType')
+
+    expect(wifi).toMatchObject({
+      type: 'select',
+      label: 'Wi-Fi Frequency',
+      displayValue: true
+    })
+    expect(wifi.options.map((option: any) => option.value)).toEqual(['2.4ghz', '5ghz'])
+  })
 })

@@ -30,6 +30,23 @@ export const motoSettingsSchema: SettingsNode<Config> = {
       path: '',
       children: [
         {
+          type: 'select',
+          label: 'Wi-Fi Frequency',
+          labelKey: 'settings.wifiFrequency',
+          path: 'wifiType',
+          displayValue: true,
+          options: [
+            { label: '2.4 GHz', value: '2.4ghz' },
+            { label: '5 GHz', value: '5ghz' }
+          ],
+          page: {
+            title: 'Wi-Fi Frequency',
+            labelTitle: 'settings.wifiFrequency',
+            description: 'Wi-Fi frequency selection.',
+            labelDescription: 'settings.wifiFrequencyDescription'
+          }
+        },
+        {
           type: 'checkbox',
           label: 'Auto Connect',
           labelKey: 'settings.autoConnect',
