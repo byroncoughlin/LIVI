@@ -238,6 +238,63 @@ describe('Projection page', () => {
     expect(screen.queryByTestId('projection-metric-graph')).not.toBeInTheDocument()
   })
 
+  test('renders GPS graph status details like the round dashboard', async () => {
+    render(<Projection {...baseProps()} />)
+
+    act(() => {
+      telemetryCb?.({
+        gpsFix: false,
+        speedKph: 0,
+        gpsSatellites: 3,
+        gpsSky: {
+          fixType: 0,
+          satsUsed: 3,
+          satsInView: 5,
+          hdop: 1.7,
+          pdop: 2.1,
+          lat: null,
+          lon: null,
+          ttff: null,
+          acquiring: 23,
+          sats: [
+            { prn: 3, el: null, az: null, snr: 38, used: true },
+            { prn: 11, el: null, az: null, snr: 27, used: true },
+            { prn: 18, el: null, az: null, snr: 12, used: false }
+          ]
+        }
+      })
+    })
+
+    fireEvent.click(screen.getByLabelText('GPS speed'))
+
+    const graph = screen.getByTestId('projection-metric-graph')
+    expect(graph).toHaveTextContent('ACQUIRING')
+    expect(graph).toHaveTextContent('23s')
+    expect(graph).toHaveTextContent('3 used \u00b7 5 in view')
+    expect(graph).toHaveTextContent('SEARCHING\u2026')
+    expect(graph).toHaveTextContent('SIGNAL (dB-Hz)')
+  })
+
+  test('renders cylinder-head graph details like the round dashboard', async () => {
+    render(<Projection {...baseProps()} />)
+
+    act(() => {
+      telemetryCb?.({ chtLeftC: 151.2, chtRightC: 162.7 })
+    })
+
+    fireEvent.click(screen.getByLabelText('L cylinder head temperature'))
+
+    const graph = screen.getByTestId('projection-metric-graph')
+    expect(graph).toHaveTextContent('L HEAD')
+    expect(graph).toHaveTextContent('R HEAD')
+    expect(graph).toHaveTextContent('\u25c4 BOXER \u25ba')
+    expect(graph).toHaveTextContent('\u0394T')
+    expect(graph).toHaveTextContent('12\u00b0')
+    expect(graph).toHaveTextContent('NORMAL')
+    expect(graph).toHaveTextContent('WARM')
+    expect(graph.querySelectorAll('filter').length).toBeGreaterThanOrEqual(2)
+  })
+
   test('long-pressing graph close opens quit confirmation', async () => {
     jest.useFakeTimers()
 

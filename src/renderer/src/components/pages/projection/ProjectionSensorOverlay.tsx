@@ -243,6 +243,12 @@ function mToFt(m: number): number {
   return Math.round(m * 3.28084)
 }
 
+function fmtSecs(s: number): string {
+  const t = Math.round(s)
+  if (t < 60) return `${t}s`
+  return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`
+}
+
 function normalizeHexColor(value: unknown): string {
   return typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value)
     ? value
@@ -902,7 +908,7 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center', fontFamily: 'monospace' }}>
           <div style={{ color: '#888', fontSize: 14, fontWeight: 800, letterSpacing: 2 }}>
-            {telemetry.gpsFix === null ? 'NO GPS RECEIVER' : 'WAITING FOR SATELLITES'}
+            {telemetry.gpsFix === null ? 'NO GPS RECEIVER' : 'WAITING FOR SATELLITES\u2026'}
           </div>
           <div style={{ color: '#555', fontSize: 11, marginTop: 6 }}>
             {telemetry.gpsFix === null
@@ -936,6 +942,7 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
         ? { label: '2D FIX', color: '#ffca28' }
         : { label: 'NO FIX', color: '#ef5350' }
   const q = hdopQuality(sky.hdop)
+  const noFix = sky.fixType === 0
   const plotR = 92
   const cx = 100
   const cy = 100
@@ -947,6 +954,7 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
   }
   const plotted = sky.sats.filter((s) => s.el !== null && s.az !== null)
   const ordered = [...sky.sats].sort((a, b) => (b.snr ?? 0) - (a.snr ?? 0)).slice(0, 12)
+  const yForSnr = (snr: number) => 64 - (Math.min(snr, 50) / 50) * 64
 
   const stat = (label: string, value: string, color = 'white') => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
@@ -954,6 +962,13 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
       <span style={{ color, fontSize: 17, fontWeight: 900, fontFamily: 'monospace' }}>{value}</span>
     </div>
   )
+  const ttffRow = noFix
+    ? sky.acquiring != null
+      ? stat('ACQUIRING', fmtSecs(sky.acquiring), '#ffca28')
+      : null
+    : sky.ttff != null
+      ? stat('TTFF', fmtSecs(sky.ttff), '#4caf50')
+      : null
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 8, padding: '8px 12px 6px 10px', fontFamily: 'sans-serif' }}>
@@ -988,7 +1003,7 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
           })}
           {plotted.length === 0 && (
             <text x={cx} y={cy + 4} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize={12} fontWeight={600} letterSpacing={1} fontFamily="monospace">
-              SEARCHING
+              {'SEARCHING\u2026'}
             </text>
           )}
         </svg>
@@ -1013,8 +1028,9 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
           </span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {stat('SATS', `${sky.satsUsed} used / ${sky.satsInView} view`)}
-          {stat('HDOP', sky.hdop !== null ? `${sky.hdop.toFixed(1)} ${q.label}` : '-', q.color)}
+          {ttffRow}
+          {stat('SATS', `${sky.satsUsed} used \u00b7 ${sky.satsInView} in view`)}
+          {stat('HDOP', sky.hdop !== null ? `${sky.hdop.toFixed(1)} ${q.label}` : '\u2014', q.color)}
           {stat('POS', sky.lat !== null && sky.lon !== null ? `${sky.lat.toFixed(4)}, ${sky.lon.toFixed(4)}` : 'no fix', sky.lat !== null ? '#ddd' : '#777')}
         </div>
         <div style={{ marginTop: 'auto' }}>
@@ -1023,6 +1039,14 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
           </div>
           {ordered.length > 0 && (
             <svg viewBox="0 0 280 78" style={{ width: '100%', display: 'block' }} preserveAspectRatio="xMidYMid meet">
+              {[20, 30, 40].map((db) => (
+                <g key={db}>
+                  <line x1={0} y1={yForSnr(db)} x2={280} y2={yForSnr(db)} stroke="rgba(255,255,255,0.10)" strokeWidth={0.75} strokeDasharray="3 3" />
+                  <text x={1} y={yForSnr(db) - 1.5} fill="rgba(255,255,255,0.5)" fontSize={8} fontWeight={600} fontFamily="monospace">
+                    {db}
+                  </text>
+                </g>
+              ))}
               {ordered.map((s, i) => {
                 const slot = 280 / ordered.length
                 const bw = Math.min(18, slot - 4)
@@ -1192,13 +1216,18 @@ function RideDynamicsPanel({
         {stat('MAX R', `${Math.round(telemetry.imuPeak.leanR)}\u00b0`, '#ff8a65')}
         {stat('PITCH', telemetry.pitchDeg != null ? (absPitch === 0 ? `0\u00b0` : `${pitchDir}${absPitch}\u00b0`) : '\u2014', '#80cbc4')}
         {stat('PEAK G', telemetry.imuPeak.g > 0.05 ? telemetry.imuPeak.g.toFixed(2) : '\u2014', '#ffb300')}
-        <ResetMaxButton onReset={actions.resetImuPeak} width={132} />
+        <div style={{ marginTop: 4, alignSelf: 'flex-end' }}>
+          <ResetMaxButton onReset={actions.resetImuPeak} width={132} />
+        </div>
       </div>
     </div>
   )
 }
 
 function CylinderHeadsPanel({ telemetry, actions }: { telemetry: MotoTelemetry; actions: MotoActions }) {
+  const leftGlowId = useSvgId('cht-cyl-l')
+  const rightGlowId = useSvgId('cht-cyl-r')
+
   if (telemetry.chtLeftC === null && telemetry.chtRightC === null) {
     return (
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1221,28 +1250,40 @@ function CylinderHeadsPanel({ telemetry, actions }: { telemetry: MotoTelemetry; 
       ? Math.abs(Math.round(telemetry.chtLeftC - telemetry.chtRightC))
       : null
   const deltaColor = delta === null ? '#777' : delta < 20 ? '#9ccc65' : delta < 40 ? '#ffca28' : '#ef5350'
-  const side = (label: 'L' | 'R', temp: number | null, peak: number) => {
+  const side = (label: 'L' | 'R', temp: number | null, peak: number, glowId: string) => {
+    const has = temp !== null
     const z = zone(temp)
+    const glow = has ? Math.max(0, Math.min(1, ((temp as number) - 40) / 200)) : 0
     return (
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
         <div style={{ color: '#dcdcdc', fontSize: 14, fontWeight: 900, letterSpacing: 3, fontFamily: 'monospace' }}>
           {label} HEAD
         </div>
         <svg viewBox="0 0 130 96" width="100%" height="96" preserveAspectRatio="xMidYMid meet" style={{ transform: label === 'L' ? 'scaleX(-1)' : undefined }}>
+          <defs>
+            <filter id={glowId} x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="5" />
+            </filter>
+          </defs>
+          {has && glow > 0.02 && (
+            <g filter={`url(#${glowId})`} opacity={0.25 + glow * 0.6}>
+              <rect x={28} y={26} width={86} height={44} rx={10} fill={z.color} />
+            </g>
+          )}
           <rect x={2} y={34} width={26} height={28} rx={4} fill="#2a2a2a" stroke="#444" strokeWidth={1} />
           {[0, 1, 2, 3, 4].map((i) => (
-            <rect key={i} x={30 + i * 14} y={24} width={9} height={48} rx={2} fill={temp !== null ? z.color : '#333'} opacity={temp !== null ? 0.75 : 0.5} />
+            <rect key={i} x={30 + i * 14} y={24} width={9} height={48} rx={2} fill={has ? z.color : '#333'} opacity={has ? 0.55 + glow * 0.35 : 0.5} />
           ))}
-          <rect x={100} y={20} width={20} height={56} rx={6} fill={temp !== null ? z.color : '#3a3a3a'} opacity={temp !== null ? 0.85 : 0.6} />
+          <rect x={100} y={20} width={20} height={56} rx={6} fill={has ? z.color : '#3a3a3a'} opacity={has ? 0.85 : 0.6} />
           <circle cx={123} cy={48} r={3.4} fill="#888" />
         </svg>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-          <span style={{ color: temp !== null ? z.color : '#fff', fontSize: 40, fontWeight: 900, fontFamily: 'monospace', lineHeight: 1 }}>
-            {temp !== null ? Math.round(temp) : '--'}
+          <span style={{ color: has ? z.color : '#fff', fontSize: 40, fontWeight: 900, fontFamily: 'monospace', lineHeight: 1 }}>
+            {has ? Math.round(temp) : '--'}
           </span>
           <span style={{ color: '#bbb', fontSize: 16, fontWeight: 700, fontFamily: 'monospace' }}>{'\u00b0C'}</span>
         </div>
-        <div style={{ color: temp !== null ? z.color : '#777', fontSize: 14, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>
+        <div style={{ color: has ? z.color : '#777', fontSize: 14, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>
           {z.label}
         </div>
         <div style={{ color: '#aaa', fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>
@@ -1254,7 +1295,7 @@ function CylinderHeadsPanel({ telemetry, actions }: { telemetry: MotoTelemetry; 
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', gap: 4, padding: '8px 12px 4px', fontFamily: 'sans-serif' }}>
-      {side('L', telemetry.chtLeftC, telemetry.chtPeak.left)}
+      {side('L', telemetry.chtLeftC, telemetry.chtPeak.left, leftGlowId)}
       <div style={{ flex: '0 0 124px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, paddingTop: 20 }}>
         <span style={{ color: '#888', fontSize: 11, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>{'\u25c4 BOXER \u25ba'}</span>
         <span style={{ color: '#888', fontSize: 12, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace', marginTop: 4 }}>{'\u0394T'}</span>
@@ -1265,7 +1306,7 @@ function CylinderHeadsPanel({ telemetry, actions }: { telemetry: MotoTelemetry; 
           <ResetMaxButton onReset={actions.resetChtPeak} width={116} />
         </div>
       </div>
-      {side('R', telemetry.chtRightC, telemetry.chtPeak.right)}
+      {side('R', telemetry.chtRightC, telemetry.chtPeak.right, rightGlowId)}
     </div>
   )
 }
