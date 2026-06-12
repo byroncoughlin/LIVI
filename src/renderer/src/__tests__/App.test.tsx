@@ -185,6 +185,33 @@ describe('App', () => {
     rafSpy.mockRestore()
   })
 
+  test('constrains host UI routes to the round display frame', () => {
+    mockPathname = '/media'
+
+    render(<App />)
+
+    const frame = document.getElementById('round-host-frame')
+    expect(frame).toBeInTheDocument()
+    expect(frame).toHaveStyle({
+      width: 'min(500px, calc(100% - 16px))',
+      height: 'min(520px, calc(100% - 16px))',
+      overflow: 'hidden'
+    })
+    expect(screen.getByTestId('routes').parentElement).toBe(frame)
+  })
+
+  test('keeps projection and cluster routes outside the host UI frame', () => {
+    mockPathname = '/'
+    const { rerender } = render(<App />)
+
+    expect(document.getElementById('round-host-frame')).not.toBeInTheDocument()
+
+    mockPathname = '/cluster'
+    rerender(<App />)
+
+    expect(document.getElementById('round-host-frame')).not.toBeInTheDocument()
+  })
+
   test('closes nav video overlay on bound back key', () => {
     mockPathname = '/media'
 

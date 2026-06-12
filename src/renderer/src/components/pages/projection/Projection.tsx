@@ -15,6 +15,7 @@ import { useProjectionMultiTouch } from './hooks/useProjectionTouch'
 import { ViewAreaMask } from './ViewAreaMask'
 
 const RETRY_DELAY_MS = 3000
+const HOST_UI_ROUTE = '/media'
 
 interface CarplayProps {
   receivingVideo: boolean
@@ -283,8 +284,8 @@ const CarplayComponent: React.FC<CarplayProps> = ({
   }, [])
 
   const gotoHostUI = useCallback(() => {
-    if (location.pathname !== '/media') {
-      navigate('/media', { replace: true })
+    if (location.pathname !== HOST_UI_ROUTE) {
+      navigate(HOST_UI_ROUTE, { replace: true })
     }
   }, [location.pathname, navigate])
 

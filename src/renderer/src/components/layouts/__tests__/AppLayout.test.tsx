@@ -69,6 +69,18 @@ describe('AppLayout', () => {
     expect(container.querySelector('#content-root')?.getAttribute('data-nav-hidden')).toBe('1')
   })
 
+  test('keeps visible nav above the projection touch layer', () => {
+    const navRef = createRef<HTMLDivElement>()
+    const mainRef = createRef<HTMLDivElement>()
+    const { container } = render(
+      <AppLayout navRef={navRef} mainRef={mainRef} receivingVideo={false}>
+        <div>Content</div>
+      </AppLayout>
+    )
+
+    expect(container.querySelector<HTMLElement>('#nav-root')?.style.zIndex).toBe('1200')
+  })
+
   test('auto-hides nav after inactivity on maps', () => {
     mockPathname = '/cluster'
     const navRef = createRef<HTMLDivElement>()

@@ -75,7 +75,7 @@ export const AppLayout: FC<PropsWithChildren<AppLayoutProps>> = ({
             borderLeft: isRhd ? '1px solid #444' : undefined,
             flex: '0 0 auto',
             position: 'relative',
-            zIndex: 10,
+            zIndex: 1200,
             opacity: hideNav ? 0 : 1,
             transform: hideNav
               ? isRhd

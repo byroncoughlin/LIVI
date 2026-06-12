@@ -284,7 +284,7 @@ describe('Projection page', () => {
     })
   })
 
-  test('requestHostUI navigates', async () => {
+  test('requestHostUI navigates to media host UI', async () => {
     render(<Projection {...baseProps()} />)
 
     act(() => {
@@ -1382,7 +1382,7 @@ describe('Projection page', () => {
     expect(liviState.setPcmData).toHaveBeenCalled()
   })
 
-  test('projection worker command requestHostUI navigates to /media', async () => {
+  test('projection worker command requestHostUI navigates to media host UI', async () => {
     mockPathname = '/settings'
 
     render(<Projection {...baseProps()} />)

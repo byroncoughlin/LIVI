@@ -39,6 +39,8 @@ function AppInner() {
   const mainRef = useRef<HTMLDivElement | null>(null)
 
   const element = useRoutes(appRoutes)
+  const isProjectionRoute = location.pathname === ROUTES.HOME
+  const isHostUiRoute = location.pathname !== ROUTES.HOME && location.pathname !== ROUTES.CLUSTER
 
   const lastInputModeRef = useRef<'keys' | 'pointer' | 'other'>('other')
   const prevPathRef = useRef<string>(location.pathname)
@@ -259,7 +261,36 @@ function AppInner() {
           showLoadingPlaceholder={!clusterDashActive}
         />
       )}
-      <Box sx={{ width: '100%', height: '100%' }}>{element}</Box>
+      <Box
+        sx={{
+          position: isHostUiRoute ? 'absolute' : 'relative',
+          inset: isHostUiRoute ? 0 : undefined,
+          width: '100%',
+          height: '100%',
+          zIndex: isHostUiRoute ? 1100 : 0,
+          display: isHostUiRoute ? 'grid' : 'block',
+          placeItems: isHostUiRoute ? 'center' : undefined,
+          overflow: 'hidden',
+          pointerEvents: isProjectionRoute || location.pathname === ROUTES.CLUSTER ? 'none' : 'auto',
+          backgroundColor: isHostUiRoute ? 'background.default' : 'transparent'
+        }}
+      >
+        {isHostUiRoute ? (
+          <Box
+            id="round-host-frame"
+            sx={{
+              position: 'relative',
+              width: 'min(500px, calc(100% - 16px))',
+              height: 'min(520px, calc(100% - 16px))',
+              overflow: 'hidden'
+            }}
+          >
+            {element}
+          </Box>
+        ) : (
+          element
+        )}
+      </Box>
     </AppLayout>
   )
 }
