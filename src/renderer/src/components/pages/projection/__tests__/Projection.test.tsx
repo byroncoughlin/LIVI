@@ -471,6 +471,7 @@ describe('Projection page', () => {
   test('renders waiting pane at the configured projection view area while video is absent', () => {
     jest.useFakeTimers()
     jest.setSystemTime(new Date('2026-06-12T17:07:00'))
+    statusState.isStreaming = false
 
     try {
       render(
@@ -513,6 +514,13 @@ describe('Projection page', () => {
     expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
   })
 
+  test('hides waiting pane when native streaming is live before receivingVideo updates', () => {
+    render(<Projection {...baseProps({ receivingVideo: false })} />)
+
+    expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
   test('keeps waiting pane hidden after dongle plugged event when video is present', () => {
     render(<Projection {...baseProps()} receivingVideo />)
 
@@ -540,6 +548,21 @@ describe('Projection page', () => {
     })
 
     expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
+  })
+
+  test('hides waiting pane after projection activity before receivingVideo updates', () => {
+    statusState.isStreaming = false
+
+    render(<Projection {...baseProps({ receivingVideo: false })} />)
+
+    expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+
+    act(() => {
+      onEventCb?.(null, { type: 'projectionActive' })
+    })
+
+    expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   test('keeps waiting pane hidden for unsupported dongle startup phone type once video is present', () => {

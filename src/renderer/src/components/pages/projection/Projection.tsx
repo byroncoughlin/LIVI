@@ -1,13 +1,11 @@
-// Icons
-import CropPortraitOutlinedIcon from '@mui/icons-material/CropPortraitOutlined'
-import { Box, useTheme } from '@mui/material'
+import { useTheme } from '@mui/material'
 import type { Config } from '@shared/types'
 import { PhoneType } from '@shared/types/Config'
 import { AudioCommand, CommandMapping } from '@shared/types/ProjectionEnums'
 import { aaContentArea, isClusterDisplayed, motoFillHex } from '@shared/utils'
 import { createProjectionWorker } from '@worker/createProjectionWorker'
 import type { KeyCommand, ProjectionWorker, UsbEvent, WorkerToUI } from '@worker/types'
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { useFftPcm } from '../../../hooks/useFftPcm'
 import { useLiviStore, useStatusStore } from '../../../store/store'
@@ -69,55 +67,6 @@ interface CarplayProps {
 
   navVideoOverlayActive: boolean
   setNavVideoOverlayActive: (v: boolean) => void
-}
-
-function StatusOverlay({
-  mode,
-  show,
-  offsetX = 0,
-  offsetY = 0
-}: {
-  mode: 'dongle' | 'phone'
-  show: boolean
-  offsetX?: number
-  offsetY?: number
-}) {
-  const theme = useTheme()
-  const isPhonePhase = mode === 'phone'
-
-  return (
-    <Box
-      role="status"
-      aria-live="polite"
-      aria-hidden={!show}
-      sx={{
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        display: show ? 'block' : 'none',
-        zIndex: 9
-      }}
-    >
-      <Box
-        sx={{
-          position: 'absolute',
-          left: `calc(50% + ${offsetX}px)`,
-          top: `calc(50% + ${offsetY}px)`,
-          transform: 'translate(-50%, -50%)',
-          display: 'grid',
-          placeItems: 'center'
-        }}
-      >
-        <CropPortraitOutlinedIcon
-          sx={{
-            fontSize: 84,
-            color: theme.palette.text.primary,
-            opacity: isPhonePhase ? 'var(--ui-breathe-opacity, 1)' : 0.55
-          }}
-        />
-      </Box>
-    </Box>
-  )
 }
 
 function WaitingProjectionPane({ settings, show }: { settings: Config; show: boolean }) {
@@ -504,42 +453,6 @@ const CarplayComponent: React.FC<CarplayProps> = ({
       } as AddEventListenerOptions)
     }
   }, [navVideoOverlayActive, pathname, setNavVideoOverlayActive])
-
-  // Overlay offset
-  const [overlayX, setOverlayX] = useState(0)
-  const [overlayY, setOverlayY] = useState(0)
-
-  useLayoutEffect(() => {
-    const getAnchor = () => document.getElementById('content-root')
-
-    const recalc = () => {
-      const r = getAnchor()?.getBoundingClientRect()
-      if (!r) return
-
-      const contentCenterX = r.left + r.width / 2
-      const contentCenterY = r.top + r.height / 2
-
-      const windowCenterX = window.innerWidth / 2
-      const windowCenterY = window.innerHeight / 2
-
-      setOverlayX(contentCenterX - windowCenterX)
-      setOverlayY(contentCenterY - windowCenterY)
-    }
-
-    recalc()
-    const raf = requestAnimationFrame(recalc)
-
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(recalc) : null
-    const anchor = getAnchor()
-    if (ro && anchor) ro.observe(anchor)
-
-    window.addEventListener('resize', recalc)
-    return () => {
-      cancelAnimationFrame(raf)
-      window.removeEventListener('resize', recalc)
-      ro?.disconnect()
-    }
-  }, [settings?.hand])
 
   // Visual delay for FFT so spectrum matches audio playback
   const fftVisualDelayMs = 0
@@ -1154,13 +1067,15 @@ const CarplayComponent: React.FC<CarplayProps> = ({
 
   /* ------------------------------- UI binding ------------------------------ */
 
-  const mode: 'dongle' | 'phone' = !isDongleConnected ? 'dongle' : 'phone'
-
   const inProjection = pathname === '/'
   const showProjectionOverlay = inProjection || navVideoOverlayActive
-  const showWaitingProjectionPane =
-    !receivingVideo ||
-    Boolean(rendererError)
+  const hasProjectionPresence =
+    receivingVideo ||
+    isStreaming ||
+    projectionSessionActive ||
+    donglePhoneLinked ||
+    transportPhoneLinked
+  const showWaitingProjectionPane = !hasProjectionPresence
 
   const resolvedNegotiatedWidth = negotiatedWidth ?? 0
   const resolvedNegotiatedHeight = negotiatedHeight ?? 0
@@ -1214,15 +1129,6 @@ const CarplayComponent: React.FC<CarplayProps> = ({
     >
       {pathname === '/' && (
         <WaitingProjectionPane settings={settings} show={showWaitingProjectionPane} />
-      )}
-
-      {pathname === '/' && (
-        <StatusOverlay
-          show={!showWaitingProjectionPane && (!isDongleConnected || !isStreaming)}
-          mode={mode}
-          offsetX={overlayX}
-          offsetY={overlayY}
-        />
       )}
 
       <div
