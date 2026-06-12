@@ -1,4 +1,5 @@
 import ArrowBackIosOutlinedIcon from '@mui/icons-material/ArrowBackIosOutlined'
+import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined'
 import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
@@ -7,6 +8,7 @@ import { useTheme } from '@mui/material/styles'
 import Typography from '@mui/material/Typography'
 import { useLayoutEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
+import { ROUTES } from '../../constants'
 import { SettingsLayoutProps } from './types'
 
 type Vp = { w: number; h: number }
@@ -30,7 +32,9 @@ export const SettingsLayout = ({
     requestAnimationFrame(() => navigate(-1))
   }
 
-  const showBack = location.pathname !== '/settings'
+  const isSettingsRoot = location.pathname === ROUTES.SETTINGS
+  const showBack = !isSettingsRoot
+  const handleCloseSettings = () => navigate(ROUTES.HOME, { replace: true })
 
   const [vp, setVp] = useState<Vp>(() => {
     const vv = window.visualViewport
@@ -162,6 +166,26 @@ export const SettingsLayout = ({
               }}
             >
               <ArrowBackIosOutlinedIcon sx={{ fontSize: `${px.iconPx}px` }} />
+            </IconButton>
+          ) : isSettingsRoot ? (
+            <IconButton
+              onClick={handleCloseSettings}
+              aria-label="Close settings"
+              className="nav-focus-primary"
+              disableRipple
+              disableFocusRipple
+              disableTouchRipple
+              sx={{
+                width: `${px.slotLeftW}px`,
+                height: '100%',
+                p: 0,
+                m: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <CloseOutlinedIcon sx={{ fontSize: `${px.iconPx}px` }} />
             </IconButton>
           ) : (
             <Box sx={{ width: `${px.slotLeftW}px`, height: '100%' }} />

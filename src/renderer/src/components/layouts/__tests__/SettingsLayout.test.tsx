@@ -56,6 +56,19 @@ describe('SettingsLayout', () => {
     expect(screen.queryByLabelText('Back')).toBeNull()
   })
 
+  test('closes root settings page back to projection', () => {
+    mockPathname = '/settings'
+    render(
+      <SettingsLayout title="Settings" showRestart={false}>
+        <div>Body</div>
+      </SettingsLayout>
+    )
+
+    fireEvent.click(screen.getByLabelText('Close settings'))
+
+    expect(navigateMock).toHaveBeenCalledWith('/', { replace: true })
+  })
+
   test('renders Apply action and calls restart handler', () => {
     const onRestart = jest.fn()
     render(
