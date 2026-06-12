@@ -71,7 +71,31 @@ interface CarplayProps {
   setNavVideoOverlayActive: (v: boolean) => void
 }
 
-function WaitingProjectionPane({ settings, show }: { settings: Config; show: boolean }) {
+type WaitingProjectionPaneProps = {
+  settings: Config
+  show: boolean
+  adapterFound: boolean
+  phoneLinked: boolean
+  videoStarting: boolean
+}
+
+function WaitingProjectionPane({
+  settings,
+  show,
+  adapterFound,
+  phoneLinked,
+  videoStarting
+}: WaitingProjectionPaneProps) {
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const isJsdom =
+      typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('jsdom')
+    if (!show || isJsdom) return
+    const id = window.setInterval(() => setNow(new Date()), 1000)
+    return () => window.clearInterval(id)
+  }, [show])
+
   if (!show) return null
 
   const displayWidth = positiveOrDefault(settings.projectionWidth, DEFAULT_PROJECTION_SIZE)
@@ -81,18 +105,73 @@ function WaitingProjectionPane({ settings, show }: { settings: Config; show: boo
   const top = Math.min(nonNegative(settings.projectionViewAreaTop), displayHeight)
   const bottom = Math.min(nonNegative(settings.projectionViewAreaBottom), displayHeight - top)
   const frame = roundDashboardFramePct(displayWidth, displayHeight, { top, bottom, left, right })
-  const appTiles = [
-    { label: 'Music', color: '#ff2d55' },
-    { label: 'Overcast', color: '#ff9500' },
-    { label: 'Now Playing', color: '#f8fafc' },
-    { label: 'OnTheWay', color: '#2563eb' },
-    { label: 'R75/6', color: '#0f172a' },
-    { label: 'Google Maps', color: '#22c55e' },
-    { label: 'Maps', color: '#60a5fa' },
-    { label: 'Settings', color: '#94a3b8' }
-  ]
-  const dockTiles = ['#60a5fa', '#ff2d55', '#94a3b8']
-  const dockTime = waitingClockLabel(new Date())
+  const clock = waitingClockLabel(now)
+  const dateLabel = now
+    .toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric'
+    })
+    .toUpperCase()
+  const status = !adapterFound
+    ? {
+        tone: '#ef5350',
+        title: 'Adapter Offline',
+        detail: 'Waiting for the CarPlay adapter',
+        adapter: 'Adapter missing',
+        phone: 'Phone search paused',
+        phoneActive: false
+      }
+    : videoStarting || phoneLinked
+      ? {
+          tone: '#ffca28',
+          title: 'Starting CarPlay',
+          detail: 'Phone link found - waiting for video',
+          adapter: 'Adapter found',
+          phone: 'Phone linked',
+          phoneActive: true
+        }
+      : {
+          tone: '#4fc3f7',
+          title: 'Ready for CarPlay',
+          detail: 'Adapter found - searching for phone',
+          adapter: 'Adapter found',
+          phone: 'Searching for phone',
+          phoneActive: true
+        }
+  const pill = (label: string, active: boolean) => (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        minHeight: 34,
+        padding: '0 14px',
+        borderRadius: 999,
+        border: `1px solid ${active ? `${status.tone}66` : 'rgba(255,255,255,0.16)'}`,
+        background: active ? `${status.tone}18` : 'rgba(255,255,255,0.06)',
+        color: active ? '#f8fafc' : 'rgba(255,255,255,0.62)',
+        fontSize: 12,
+        fontWeight: 800,
+        fontFamily: 'monospace',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+        whiteSpace: 'nowrap'
+      }}
+    >
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: active ? status.tone : 'rgba(255,255,255,0.28)',
+          boxShadow: active ? `0 0 12px ${status.tone}aa` : undefined,
+          flex: '0 0 auto'
+        }}
+      />
+      {label}
+    </div>
+  )
 
   return (
     <div
@@ -104,188 +183,133 @@ function WaitingProjectionPane({ settings, show }: { settings: Config; show: boo
         top: frame.top,
         width: frame.width,
         height: frame.height,
-        backgroundColor: '#07111f',
+        backgroundColor: '#02050a',
         border: '1px solid rgba(255,255,255,0.16)',
         borderRadius: 34,
         overflow: 'hidden',
         pointerEvents: 'none',
-        zIndex: 2
+        zIndex: 2,
+        color: '#f8fafc',
+        fontFamily: 'sans-serif'
       }}
     >
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundColor: '#07111f'
+          background:
+            'radial-gradient(circle at 50% 12%, rgba(79,195,247,0.18), transparent 46%), linear-gradient(180deg, #07111f 0%, #02050a 62%, #000 100%)'
         }}
       />
       <div
         style={{
           position: 'absolute',
-          inset: '0 0 auto',
-          height: '44%',
-          backgroundColor: 'rgba(20,42,75,0.28)'
-        }}
-      />
-      <div
-        data-testid="projection-waiting-grid"
-        style={{
-          position: 'absolute',
-          left: '7.5%',
-          right: '7.5%',
-          top: '7%',
-          bottom: '30%',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gridTemplateRows: 'repeat(2, minmax(0, 1fr))',
-          alignItems: 'start',
-          justifyItems: 'center',
-          columnGap: '5.5%',
-          rowGap: '10%'
-        }}
-      >
-        {appTiles.map(({ label, color }) => (
-          <div
-            key={label}
-            style={{
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 8,
-              minWidth: 0
-            }}
-          >
-            <div
-              style={{
-                width: '100%',
-                maxWidth: 96,
-                aspectRatio: '1 / 1',
-                borderRadius: '24%',
-                backgroundColor: color,
-                border: '1px solid rgba(255,255,255,0.24)',
-                opacity: 0.96
-              }}
-            />
-            <div
-              style={{
-                width: '125%',
-                color: '#f3f4f6',
-                fontSize: 14,
-                fontWeight: 500,
-                lineHeight: 1.1,
-                textAlign: 'center',
-                textShadow: '0 1px 3px rgba(0,0,0,0.85)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              {label}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div
-        data-testid="projection-waiting-pages"
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: '18%',
+          left: '9%',
+          right: '9%',
+          top: '9%',
+          bottom: '9%',
           display: 'flex',
-          justifyContent: 'center',
-          gap: 8
-        }}
-      >
-        {[0, 1, 2, 3].map((index) => (
-          <div
-            key={index}
-            style={{
-              width: 11,
-              height: 11,
-              borderRadius: '50%',
-              backgroundColor: index === 2 ? 'rgba(255,255,255,0.82)' : 'rgba(255,255,255,0.34)'
-            }}
-          />
-        ))}
-      </div>
-      <div
-        data-testid="projection-waiting-dock"
-        style={{
-          position: 'absolute',
-          left: '8.5%',
-          right: '8.5%',
-          bottom: '5.5%',
-          height: '13%',
-          borderRadius: 28,
-          backgroundColor: 'rgba(255,255,255,0.16)',
-          border: '1px solid rgba(255,255,255,0.18)',
-          display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          padding: '0 5%'
+          justifyContent: 'center',
+          textAlign: 'center'
         }}
       >
         <div
+          data-testid="projection-waiting-date"
           style={{
-            width: 22,
-            height: 22,
-            borderRadius: 6,
-            border: '3px solid rgba(255,255,255,0.92)',
-            flex: '0 0 auto'
+            color: 'rgba(255,255,255,0.58)',
+            fontSize: 15,
+            fontWeight: 800,
+            fontFamily: 'monospace',
+            letterSpacing: 3,
+            marginBottom: 10
+          }}
+        >
+          {dateLabel}
+        </div>
+        <div
+          data-testid="projection-waiting-clock"
+          style={{
+            color: '#fff',
+            fontSize: 118,
+            fontWeight: 900,
+            lineHeight: 0.92,
+            letterSpacing: 0,
+            fontVariantNumeric: 'tabular-nums',
+            textShadow: '0 6px 34px rgba(0,0,0,0.72)'
+          }}
+        >
+          {clock}
+        </div>
+        <div
+          style={{
+            width: 88,
+            height: 4,
+            borderRadius: 2,
+            background: status.tone,
+            boxShadow: `0 0 18px ${status.tone}99`,
+            margin: '24px 0 18px'
           }}
         />
         <div
+          data-testid="projection-waiting-status-title"
           style={{
             color: '#f8fafc',
-            fontSize: 21,
-            fontWeight: 800,
-            lineHeight: 1,
-            flex: '0 0 auto'
+            fontSize: 24,
+            fontWeight: 900,
+            lineHeight: 1.1,
+            marginBottom: 6
           }}
         >
-          {dockTime}
+          {status.title}
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flex: '1 1 auto' }}>
-          {dockTiles.map((color) => (
-            <div
-              key={color}
-              style={{
-                width: 48,
-                aspectRatio: '1 / 1',
-                borderRadius: '26%',
-                backgroundColor: color,
-                border: '1px solid rgba(255,255,255,0.24)',
-                opacity: 0.98
-              }}
-            />
-          ))}
+        <div
+          data-testid="projection-waiting-status-detail"
+          style={{
+            color: 'rgba(255,255,255,0.62)',
+            fontSize: 14,
+            fontWeight: 600,
+            lineHeight: 1.25,
+            marginBottom: 24
+          }}
+        >
+          {status.detail}
+        </div>
+        <div
+          data-testid="projection-waiting-status-pills"
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            gap: 10,
+            maxWidth: '100%'
+          }}
+        >
+          {pill(status.adapter, adapterFound)}
+          {pill(status.phone, status.phoneActive)}
         </div>
         <div
           style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: 0,
+            transform: 'translateX(-50%)',
             display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            color: '#f8fafc',
-            fontSize: 19,
-            fontWeight: 800,
-            lineHeight: 1,
-            flex: '0 0 auto'
+            gap: 7
           }}
         >
-          <span>5G</span>
-          <span
-            style={{
-              width: 30,
-              height: 16,
-              border: '3px solid rgba(255,255,255,0.9)',
-              borderRadius: 5,
-              position: 'relative',
-              display: 'inline-block'
-            }}
-          />
+          {[0, 1, 2].map((index) => (
+            <div
+              key={index}
+              style={{
+                width: index === 1 ? 28 : 8,
+                height: 8,
+                borderRadius: 999,
+                backgroundColor: index === 1 ? status.tone : 'rgba(255,255,255,0.24)'
+              }}
+            />
+          ))}
         </div>
       </div>
     </div>
@@ -1069,13 +1093,10 @@ const CarplayComponent: React.FC<CarplayProps> = ({
 
   const inProjection = pathname === '/'
   const showProjectionOverlay = inProjection || navVideoOverlayActive
-  const hasProjectionPresence =
-    receivingVideo ||
-    isStreaming ||
-    projectionSessionActive ||
-    donglePhoneLinked ||
-    transportPhoneLinked
-  const showWaitingProjectionPane = !hasProjectionPresence
+  const videoVisible = receivingVideo && !rendererError
+  const phoneLinked = donglePhoneLinked || transportPhoneLinked
+  const showWaitingProjectionPane = !videoVisible
+  const waitingVideoStarting = isStreaming || (projectionSessionActive && phoneLinked)
 
   const resolvedNegotiatedWidth = negotiatedWidth ?? 0
   const resolvedNegotiatedHeight = negotiatedHeight ?? 0
@@ -1128,7 +1149,13 @@ const CarplayComponent: React.FC<CarplayProps> = ({
       }}
     >
       {pathname === '/' && (
-        <WaitingProjectionPane settings={settings} show={showWaitingProjectionPane} />
+        <WaitingProjectionPane
+          settings={settings}
+          show={showWaitingProjectionPane}
+          adapterFound={isDongleConnected}
+          phoneLinked={phoneLinked}
+          videoStarting={waitingVideoStarting}
+        />
       )}
 
       <div

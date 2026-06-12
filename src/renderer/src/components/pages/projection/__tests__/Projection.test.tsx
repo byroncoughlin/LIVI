@@ -521,15 +521,41 @@ describe('Projection page', () => {
         top: '14.625%',
         width: '70.625%',
         height: '70.625%',
-        backgroundColor: '#07111f'
+        backgroundColor: '#02050a'
       })
-      expect(screen.getByText('Music')).toBeInTheDocument()
-      expect(screen.getByText('Google Maps')).toBeInTheDocument()
-      expect(screen.getByText('5:07')).toBeInTheDocument()
-      expect(screen.getByTestId('projection-waiting-grid').children).toHaveLength(8)
+      expect(screen.getByTestId('projection-waiting-clock')).toHaveTextContent('5:07')
+      expect(screen.getByTestId('projection-waiting-status-title')).toHaveTextContent(
+        'Ready for CarPlay'
+      )
+      expect(screen.getByTestId('projection-waiting-status-detail')).toHaveTextContent(
+        'Adapter found - searching for phone'
+      )
+      expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
+        'Adapter found'
+      )
+      expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
+        'Searching for phone'
+      )
     } finally {
       jest.useRealTimers()
     }
+  })
+
+  test('renders adapter-offline standby status when the adapter is absent', () => {
+    statusState.isStreaming = false
+    statusState.isDongleConnected = false
+
+    render(<Projection {...baseProps({ receivingVideo: false })} />)
+
+    expect(screen.getByTestId('projection-waiting-status-title')).toHaveTextContent(
+      'Adapter Offline'
+    )
+    expect(screen.getByTestId('projection-waiting-status-detail')).toHaveTextContent(
+      'Waiting for the CarPlay adapter'
+    )
+    expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
+      'Adapter missing'
+    )
   })
 
   test('renders waiting pane from custom projection view area outside the round default', () => {
@@ -565,10 +591,13 @@ describe('Projection page', () => {
     expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
   })
 
-  test('hides waiting pane when native streaming is live before receivingVideo updates', () => {
+  test('keeps standby pane visible while native streaming is live before video frames arrive', () => {
     render(<Projection {...baseProps({ receivingVideo: false })} />)
 
-    expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
+    expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+    expect(screen.getByTestId('projection-waiting-status-title')).toHaveTextContent(
+      'Starting CarPlay'
+    )
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
@@ -601,7 +630,7 @@ describe('Projection page', () => {
     expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
   })
 
-  test('hides waiting pane after projection activity before receivingVideo updates', () => {
+  test('keeps standby pane visible after projection activity before video frames arrive', () => {
     statusState.isStreaming = false
 
     render(<Projection {...baseProps({ receivingVideo: false })} />)
@@ -612,7 +641,10 @@ describe('Projection page', () => {
       onEventCb?.(null, { type: 'projectionActive' })
     })
 
-    expect(screen.queryByTestId('projection-waiting-pane')).not.toBeInTheDocument()
+    expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
+    expect(screen.getByTestId('projection-waiting-status-title')).toHaveTextContent(
+      'Ready for CarPlay'
+    )
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
