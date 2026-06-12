@@ -1,5 +1,5 @@
 import { AudioCommand, CommandMapping } from '@shared/types/ProjectionEnums'
-import { act, render, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { Projection } from '../Projection'
 
 const navigateMock = jest.fn()
@@ -97,12 +97,14 @@ class MockMessageChannel {
 describe('Projection page', () => {
   let onEventCb: AnyFn | undefined
   let usbCb: AnyFn | undefined
+  let telemetryCb: ((payload: unknown) => void) | undefined
 
   beforeEach(() => {
     MockWorker.instances = []
     MockMessageChannel.instances = []
     navigateMock.mockReset()
     mockPathname = '/'
+    telemetryCb = undefined
 
     statusState.isStreaming = true
     statusState.isDongleConnected = true
@@ -151,7 +153,12 @@ describe('Projection page', () => {
         offAudioChunk: jest.fn(),
         onEvent: jest.fn((cb: AnyFn) => (onEventCb = cb)),
         offEvent: jest.fn(),
-        sendCommand: jest.fn()
+        sendCommand: jest.fn(),
+        getTelemetrySnapshot: jest.fn().mockResolvedValue({}),
+        onTelemetry: jest.fn((cb: (payload: unknown) => void) => {
+          telemetryCb = cb
+        }),
+        offTelemetry: jest.fn()
       },
       usb: {
         getDeviceInfo: jest.fn().mockResolvedValue({ device: true }),
@@ -171,6 +178,17 @@ describe('Projection page', () => {
 
     expect((window as any).projection.ipc.start).not.toHaveBeenCalled()
     expect(statusState.setDongleConnected).toHaveBeenCalledWith(true)
+  })
+
+  test('renders cylinder head telemetry on the projection screen', async () => {
+    render(<Projection {...baseProps()} />)
+
+    act(() => {
+      telemetryCb?.({ chtLeftC: 151.2, chtRightC: 162.7 })
+    })
+
+    expect(screen.getByLabelText('L cylinder head temperature')).toHaveTextContent('151')
+    expect(screen.getByLabelText('R cylinder head temperature')).toHaveTextContent('163')
   })
 
   test('usb unplugged stops projection and clears streaming state', async () => {
