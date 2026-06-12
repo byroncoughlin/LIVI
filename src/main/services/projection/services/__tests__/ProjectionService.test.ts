@@ -113,6 +113,36 @@ jest.mock('../FirmwareUpdateService', () => ({
   }))
 }))
 
+const mockGstVideoInstances: Array<{
+  args: unknown[]
+  setVisible: jest.Mock
+  setContentRegion: jest.Mock
+  push: jest.Mock
+  dispose: jest.Mock
+}> = []
+
+const mockGstVideoConstructor = jest.fn((...args: unknown[]) => {
+  const instance = {
+    args,
+    setVisible: jest.fn(),
+    setContentRegion: jest.fn(),
+    push: jest.fn(),
+    dispose: jest.fn()
+  }
+  mockGstVideoInstances.push(instance)
+  return instance
+})
+
+jest.mock('@main/services/video/GstVideo', () => ({
+  GstVideo: mockGstVideoConstructor,
+  probeGstCodecs: jest.fn(() => ({
+    h264: { hw: false, sw: true },
+    h265: { hw: true, sw: true },
+    vp9: { hw: false, sw: true },
+    av1: { hw: false, sw: false }
+  }))
+}))
+
 jest.mock('@main/ipc/utils', () => ({
   configEvents: {
     on: jest.fn(),
@@ -168,6 +198,7 @@ describe('ProjectionService', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.restoreAllMocks()
+    mockGstVideoInstances.length = 0
     fs.rmSync('/tmp/appdata', { recursive: true, force: true })
     fs.mkdirSync('/tmp/appdata', { recursive: true })
   })
@@ -182,6 +213,21 @@ describe('ProjectionService', () => {
     const row = (registerIpcOn as jest.Mock).mock.calls.find(([ch]) => ch === channel)
     if (!row) throw new Error(`Missing ipc on: ${channel}`)
     return row[1] as T
+  }
+
+  function emitMainVideoFrame(
+    svc: any,
+    overrides: Partial<{ width: number; height: number; data: Buffer }> = {}
+  ): void {
+    svc.driver.emit(
+      'message',
+      Object.assign(new VideoData() as any, {
+        header: { type: 0 },
+        width: overrides.width ?? 800,
+        height: overrides.height ?? 480,
+        data: overrides.data ?? Buffer.from([0, 0, 1, 9])
+      })
+    )
   }
 
   test('registers IPC handlers and listeners in constructor', () => {
@@ -2190,6 +2236,89 @@ describe('ProjectionService', () => {
     expect(svc.start).toHaveBeenCalledTimes(1)
 
     jest.useRealTimers()
+  })
+
+  test('ambient fill changes do not recreate the native main video player', () => {
+    const svc = new ProjectionService() as any
+    svc.webContents = { send: jest.fn(), isDestroyed: jest.fn(() => false) }
+    svc.config = {
+      ...svc.config,
+      projectionWidth: 800,
+      projectionHeight: 800,
+      projectionViewAreaTop: 118,
+      projectionViewAreaBottom: 118,
+      projectionViewAreaLeft: 118,
+      projectionViewAreaRight: 118,
+      backdropEnabled: false,
+      ambientFillEnabled: false
+    }
+
+    emitMainVideoFrame(svc)
+
+    expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
+    const first = mockGstVideoInstances[0]
+    expect(first.args[3]).toEqual({
+      dynamicBackdrop: false,
+      displayWidth: 800,
+      displayHeight: 800,
+      viewAreaTop: 118,
+      viewAreaBottom: 118,
+      viewAreaLeft: 118,
+      viewAreaRight: 118
+    })
+
+    svc.onConfigChanged({
+      ...svc.config,
+      ambientFillEnabled: true,
+      ambientFillColor: '#20364a'
+    })
+
+    expect(first.dispose).not.toHaveBeenCalled()
+    expect(svc.gstVideo).toBe(first)
+    expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
+  })
+
+  test('backdrop changes recreate only the native main video player with dynamic options', () => {
+    const svc = new ProjectionService() as any
+    svc.webContents = { send: jest.fn(), isDestroyed: jest.fn(() => false) }
+    svc.stop = jest.fn()
+    svc.config = {
+      ...svc.config,
+      projectionWidth: 800,
+      projectionHeight: 800,
+      projectionViewAreaTop: 118,
+      projectionViewAreaBottom: 118,
+      projectionViewAreaLeft: 118,
+      projectionViewAreaRight: 118,
+      backdropEnabled: false,
+      ambientFillEnabled: false
+    }
+
+    emitMainVideoFrame(svc)
+    const first = mockGstVideoInstances[0]
+
+    svc.onConfigChanged({
+      ...svc.config,
+      backdropEnabled: true,
+      roundedCornerMaskEnabled: true
+    })
+
+    expect(first.dispose).toHaveBeenCalledTimes(1)
+    expect(svc.gstVideo).toBeNull()
+    expect(svc.stop).not.toHaveBeenCalled()
+
+    emitMainVideoFrame(svc)
+
+    expect(mockGstVideoConstructor).toHaveBeenCalledTimes(2)
+    expect(mockGstVideoInstances[1].args[3]).toEqual({
+      dynamicBackdrop: true,
+      displayWidth: 800,
+      displayHeight: 800,
+      viewAreaTop: 118,
+      viewAreaBottom: 118,
+      viewAreaLeft: 118,
+      viewAreaRight: 118
+    })
   })
 
   test('main video frame burst emits projectionActive once', () => {
