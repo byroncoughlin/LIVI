@@ -361,6 +361,13 @@ function tempColor(temp: number | null): string {
   return '#ef5350'
 }
 
+function chtZone(temp: number): { label: string; color: string } {
+  if (temp < 80) return { label: 'COLD', color: '#4fc3f7' }
+  if (temp < 160) return { label: 'NORMAL', color: '#66bb6a' }
+  if (temp < 220) return { label: 'WARM', color: '#ffca28' }
+  return { label: 'HOT', color: '#ef5350' }
+}
+
 function leanColor(absLean: number): string {
   if (absLean < 15) return '#66bb6a'
   if (absLean < 30) return '#9ccc65'
@@ -385,7 +392,13 @@ type SpeedState = {
   aboveSince: number | null
 }
 
-function stableValue(raw: number | null, state: StableValueState, step: number, holdMs: number, now: number): number | null {
+function stableValue(
+  raw: number | null,
+  state: StableValueState,
+  step: number,
+  holdMs: number,
+  now: number
+): number | null {
   if (raw == null) {
     state.shown = null
     state.pending = null
@@ -505,7 +518,8 @@ function useMotoTelemetry(settings: MotoSettings | null): {
       if (patch.ambientF !== undefined && next.ambientF != null)
         addPoint('ambientTemp', next.ambientF, now)
       if (patch.piCpuC !== undefined && next.piCpuC != null) addPoint('piTemp', next.piCpuC, now)
-      if (patch.chtLeftC !== undefined && next.chtLeftC != null) addPoint('chtLeft', next.chtLeftC, now)
+      if (patch.chtLeftC !== undefined && next.chtLeftC != null)
+        addPoint('chtLeft', next.chtLeftC, now)
       if (patch.chtRightC !== undefined && next.chtRightC != null)
         addPoint('chtRight', next.chtRightC, now)
       if (patch.leanDeg !== undefined && next.leanDeg != null)
@@ -546,7 +560,11 @@ function useMotoTelemetry(settings: MotoSettings | null): {
         const stable = stableRef.current
 
         if (patch.speedMph !== undefined || patch.gpsFix !== undefined) {
-          next.speedMph = stableSpeed(next.gpsFix === true ? next.speedMph : null, stable.speed, now)
+          next.speedMph = stableSpeed(
+            next.gpsFix === true ? next.speedMph : null,
+            stable.speed,
+            now
+          )
         }
         if (patch.ambientF !== undefined) {
           next.ambientF = stableValue(patch.ambientF, stable.ambient, 3, 3000, now)
@@ -579,7 +597,10 @@ function useMotoTelemetry(settings: MotoSettings | null): {
         }
 
         logFromState(next, patch, now)
-        return changed(prev as unknown as Record<string, unknown>, next as unknown as Record<string, unknown>)
+        return changed(
+          prev as unknown as Record<string, unknown>,
+          next as unknown as Record<string, unknown>
+        )
           ? next
           : prev
       })
@@ -934,16 +955,48 @@ function BottomArc({
           <g transform={rot}>
             <rect x={-w} y={-3 * h} width={3 * w} height={3 * h + horizonY} fill="transparent" />
             <rect x={-w} y={horizonY} width={3 * w} height={3 * h} fill="#5c3412" />
-            <line x1={-w} y1={horizonY} x2={3 * w} y2={horizonY} stroke="white" strokeWidth={2} opacity={0.85} />
+            <line
+              x1={-w}
+              y1={horizonY}
+              x2={3 * w}
+              y2={horizonY}
+              stroke="white"
+              strokeWidth={2}
+              opacity={0.85}
+            />
             {pitchLines.map(({ y, len, label }) => (
               <g key={y}>
-                <line x1={cx - len / 2} y1={y} x2={cx + len / 2} y2={y} stroke="white" strokeWidth={1} opacity={0.5} />
+                <line
+                  x1={cx - len / 2}
+                  y1={y}
+                  x2={cx + len / 2}
+                  y2={y}
+                  stroke="white"
+                  strokeWidth={1}
+                  opacity={0.5}
+                />
                 {label && (
                   <>
-                    <text x={cx - len / 2 - 5} y={y + 3.5} textAnchor="end" fill="white" fontSize={8} fontFamily="sans-serif" opacity={0.55}>
+                    <text
+                      x={cx - len / 2 - 5}
+                      y={y + 3.5}
+                      textAnchor="end"
+                      fill="white"
+                      fontSize={8}
+                      fontFamily="sans-serif"
+                      opacity={0.55}
+                    >
                       {label}
                     </text>
-                    <text x={cx + len / 2 + 5} y={y + 3.5} textAnchor="start" fill="white" fontSize={8} fontFamily="sans-serif" opacity={0.55}>
+                    <text
+                      x={cx + len / 2 + 5}
+                      y={y + 3.5}
+                      textAnchor="start"
+                      fill="white"
+                      fontSize={8}
+                      fontFamily="sans-serif"
+                      opacity={0.55}
+                    >
                       {label}
                     </text>
                   </>
@@ -952,61 +1005,213 @@ function BottomArc({
             ))}
           </g>
         </g>
-        <line x1={cx - 72} y1={refY} x2={cx - 12} y2={refY} stroke={ref} strokeWidth={3.5} strokeLinecap="round" />
-        <line x1={cx - 72} y1={refY} x2={cx - 72} y2={refY + 9} stroke={ref} strokeWidth={3.5} strokeLinecap="round" />
-        <line x1={cx + 12} y1={refY} x2={cx + 72} y2={refY} stroke={ref} strokeWidth={3.5} strokeLinecap="round" />
-        <line x1={cx + 72} y1={refY} x2={cx + 72} y2={refY + 9} stroke={ref} strokeWidth={3.5} strokeLinecap="round" />
+        <line
+          x1={cx - 72}
+          y1={refY}
+          x2={cx - 12}
+          y2={refY}
+          stroke={ref}
+          strokeWidth={3.5}
+          strokeLinecap="round"
+        />
+        <line
+          x1={cx - 72}
+          y1={refY}
+          x2={cx - 72}
+          y2={refY + 9}
+          stroke={ref}
+          strokeWidth={3.5}
+          strokeLinecap="round"
+        />
+        <line
+          x1={cx + 12}
+          y1={refY}
+          x2={cx + 72}
+          y2={refY}
+          stroke={ref}
+          strokeWidth={3.5}
+          strokeLinecap="round"
+        />
+        <line
+          x1={cx + 72}
+          y1={refY}
+          x2={cx + 72}
+          y2={refY + 9}
+          stroke={ref}
+          strokeWidth={3.5}
+          strokeLinecap="round"
+        />
         <rect x={cx - 30} y={refY - 13} width={60} height={26} fill="rgba(0,0,0,0.88)" rx={8} />
-        <text x={cx} y={refY + 7} textAnchor="middle" fill={telemetry.pitchDeg != null ? ref : 'white'} fontSize={20} fontWeight="bold" fontFamily="monospace">
-          {telemetry.pitchDeg != null ? (absPitch === 0 ? '\u2014' : `${pitchDir}${absPitch}\u00b0`) : '--'}
+        <text
+          x={cx}
+          y={refY + 7}
+          textAnchor="middle"
+          fill={telemetry.pitchDeg != null ? ref : 'white'}
+          fontSize={20}
+          fontWeight="bold"
+          fontFamily="monospace"
+        >
+          {telemetry.pitchDeg != null
+            ? absPitch === 0
+              ? '\u2014'
+              : `${pitchDir}${absPitch}\u00b0`
+            : '--'}
         </text>
         <rect x={0} y={66} width={w} height={h - 66} fill="rgba(0,0,0,0.25)" />
 
         <g>
           <rect x={84} y={6} width={78} height={58} fill="rgba(0,0,0,0.72)" rx={5} />
-          <text x={123} y={22} textAnchor="middle" fill="rgba(255,255,255,0.75)" fontSize={12} fontWeight="bold" fontFamily="monospace" letterSpacing={2}>
+          <text
+            x={123}
+            y={22}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.75)"
+            fontSize={12}
+            fontWeight="bold"
+            fontFamily="monospace"
+            letterSpacing={2}
+          >
             ALT
           </text>
-          <text x={123} y={48} textAnchor="middle" fill={telemetry.altitudeFt != null ? '#e0e0e0' : 'white'} fontSize={24} fontWeight="bold" fontFamily="monospace">
+          <text
+            x={123}
+            y={48}
+            textAnchor="middle"
+            fill={telemetry.altitudeFt != null ? '#e0e0e0' : 'white'}
+            fontSize={24}
+            fontWeight="bold"
+            fontFamily="monospace"
+          >
             {altFt}
           </text>
-          <text x={123} y={59} textAnchor="middle" fill="rgba(255,255,255,0.7)" fontSize={11} fontWeight="bold" fontFamily="sans-serif">
+          <text
+            x={123}
+            y={59}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.7)"
+            fontSize={11}
+            fontWeight="bold"
+            fontFamily="sans-serif"
+          >
             ft
           </text>
         </g>
 
         <g>
-          <rect x={cx - 40} y={88} width={80} height={40} fill="rgba(0,0,0,0.88)" stroke="rgba(255,255,255,0.07)" strokeWidth={0.75} rx={14} />
-          <text x={cx} y={112} textAnchor="middle" fill="white" fontSize={24} fontWeight="bold" fontFamily="sans-serif">
+          <rect
+            x={cx - 40}
+            y={88}
+            width={80}
+            height={40}
+            fill="rgba(0,0,0,0.88)"
+            stroke="rgba(255,255,255,0.07)"
+            strokeWidth={0.75}
+            rx={14}
+          />
+          <text
+            x={cx}
+            y={112}
+            textAnchor="middle"
+            fill="white"
+            fontSize={24}
+            fontWeight="bold"
+            fontFamily="sans-serif"
+          >
             {hasLean ? (absLean > 0 ? `${absLean}\u00b0 ${side}` : `0\u00b0`) : '--'}
           </text>
         </g>
 
         <g>
-          <text x={445} y={11} textAnchor="middle" fill="rgba(255,255,255,0.75)" fontSize={12} fontWeight="bold" fontFamily="monospace" letterSpacing={2}>
+          <text
+            x={445}
+            y={11}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.75)"
+            fontSize={12}
+            fontWeight="bold"
+            fontFamily="monospace"
+            letterSpacing={2}
+          >
             G
           </text>
           <rect x={415} y={14} width={60} height={34} fill="rgba(0,0,0,0.72)" rx={5} />
-          <text x={445} y={40} textAnchor="middle" fill={hasG ? gTextColor : 'white'} fontSize={30} fontWeight="bold" fontFamily="monospace">
+          <text
+            x={445}
+            y={40}
+            textAnchor="middle"
+            fill={hasG ? gTextColor : 'white'}
+            fontSize={30}
+            fontWeight="bold"
+            fontFamily="monospace"
+          >
             {hasG ? gVal.toFixed(1) : '--'}
           </text>
           {hasG && telemetry.imuPeak.g > 0.05 && (
             <g>
-              <text x={502} y={11} textAnchor="middle" fill="rgba(255,170,0,0.85)" fontSize={11} fontWeight="bold" fontFamily="monospace" letterSpacing={1}>
+              <text
+                x={502}
+                y={11}
+                textAnchor="middle"
+                fill="rgba(255,170,0,0.85)"
+                fontSize={11}
+                fontWeight="bold"
+                fontFamily="monospace"
+                letterSpacing={1}
+              >
                 MAX
               </text>
               <rect x={478} y={14} width={48} height={23} fill="rgba(0,0,0,0.65)" rx={5} />
-              <text x={502} y={30} textAnchor="middle" fill="rgba(255,170,0,0.92)" fontSize={18} fontWeight="bold" fontFamily="monospace">
+              <text
+                x={502}
+                y={30}
+                textAnchor="middle"
+                fill="rgba(255,170,0,0.92)"
+                fontSize={18}
+                fontWeight="bold"
+                fontFamily="monospace"
+              >
                 {telemetry.imuPeak.g.toFixed(1)}
               </text>
             </g>
           )}
         </g>
 
-        <rect x={0} y={0} width={165} height={h} fill="transparent" style={{ cursor: 'pointer' }} onClick={() => actions.openMetric('altitude')} />
-        <rect x={390} y={0} width={175} height={h} fill="transparent" style={{ cursor: 'pointer' }} onClick={() => actions.openMetric('gForce')} />
-        <rect x={165} y={0} width={225} height={78} fill="transparent" style={{ cursor: 'pointer' }} onClick={() => actions.openMetric('pitchAngle')} />
-        <rect x={165} y={78} width={225} height={h - 78} fill="transparent" style={{ cursor: 'pointer' }} onClick={() => actions.openMetric('leanAngle')} />
+        <rect
+          x={0}
+          y={0}
+          width={165}
+          height={h}
+          fill="transparent"
+          style={{ cursor: 'pointer' }}
+          onClick={() => actions.openMetric('altitude')}
+        />
+        <rect
+          x={390}
+          y={0}
+          width={175}
+          height={h}
+          fill="transparent"
+          style={{ cursor: 'pointer' }}
+          onClick={() => actions.openMetric('gForce')}
+        />
+        <rect
+          x={165}
+          y={0}
+          width={225}
+          height={78}
+          fill="transparent"
+          style={{ cursor: 'pointer' }}
+          onClick={() => actions.openMetric('pitchAngle')}
+        />
+        <rect
+          x={165}
+          y={78}
+          width={225}
+          height={h - 78}
+          fill="transparent"
+          style={{ cursor: 'pointer' }}
+          onClick={() => actions.openMetric('leanAngle')}
+        />
       </svg>
     </div>
   )
@@ -1014,9 +1219,18 @@ function BottomArc({
 
 function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
   const sky = telemetry.gpsSky
+  const sweepId = useSvgId('gps-sweep')
   if (!sky) {
     return (
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
         <div style={{ textAlign: 'center', fontFamily: 'monospace' }}>
           <div style={{ color: '#888', fontSize: 14, fontWeight: 800, letterSpacing: 2 }}>
             {telemetry.gpsFix === null ? 'NO GPS RECEIVER' : 'WAITING FOR SATELLITES\u2026'}
@@ -1068,8 +1282,12 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
   const yForSnr = (snr: number) => 64 - (Math.min(snr, 50) / 50) * 64
 
   const stat = (label: string, value: string, color = 'white') => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-      <span style={{ color: '#dcdcdc', fontSize: 14, fontWeight: 800, letterSpacing: 0.5 }}>{label}</span>
+    <div
+      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}
+    >
+      <span style={{ color: '#dcdcdc', fontSize: 14, fontWeight: 800, letterSpacing: 0.5 }}>
+        {label}
+      </span>
       <span style={{ color, fontSize: 17, fontWeight: 900, fontFamily: 'monospace' }}>{value}</span>
     </div>
   )
@@ -1082,21 +1300,89 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
       : null
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 8, padding: '8px 12px 6px 10px', fontFamily: 'sans-serif' }}>
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        gap: 8,
+        padding: '8px 12px 6px 10px',
+        fontFamily: 'sans-serif'
+      }}
+    >
       <div style={{ flex: '0 0 45%', minWidth: 0, display: 'flex', justifyContent: 'center' }}>
-        <svg viewBox="0 0 200 212" style={{ height: '100%', display: 'block' }} preserveAspectRatio="xMidYMid meet">
+        <svg
+          viewBox="0 0 200 212"
+          style={{ height: '100%', display: 'block' }}
+          preserveAspectRatio="xMidYMid meet"
+        >
           {[0, 30, 60].map((el) => (
-            <circle key={el} cx={cx} cy={cy} r={ring(el)} fill={el === 0 ? '#0c0c0c' : 'none'} stroke="rgba(255,255,255,0.13)" strokeWidth={el === 0 ? 1.2 : 0.8} />
+            <circle
+              key={el}
+              cx={cx}
+              cy={cy}
+              r={ring(el)}
+              fill={el === 0 ? '#0c0c0c' : 'none'}
+              stroke="rgba(255,255,255,0.13)"
+              strokeWidth={el === 0 ? 1.2 : 0.8}
+            />
           ))}
-          <line x1={cx} y1={cy - plotR} x2={cx} y2={cy + plotR} stroke="rgba(255,255,255,0.08)" strokeWidth={0.8} />
-          <line x1={cx - plotR} y1={cy} x2={cx + plotR} y2={cy} stroke="rgba(255,255,255,0.08)" strokeWidth={0.8} />
+          <line
+            x1={cx}
+            y1={cy - plotR}
+            x2={cx}
+            y2={cy + plotR}
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={0.8}
+          />
+          <line
+            x1={cx - plotR}
+            y1={cy}
+            x2={cx + plotR}
+            y2={cy}
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={0.8}
+          />
+          {noFix && (
+            <g>
+              <defs>
+                <linearGradient id={sweepId} x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#4fc3f7" stopOpacity="0" />
+                  <stop offset="100%" stopColor="#4fc3f7" stopOpacity="0.33" />
+                </linearGradient>
+              </defs>
+              <path
+                d={`M${cx},${cy} L${cx + plotR},${cy} A${plotR},${plotR} 0 0 0 ${cx + plotR * Math.cos(-0.5)},${cy + plotR * Math.sin(-0.5)} Z`}
+                fill={`url(#${sweepId})`}
+                data-testid="projection-gps-acquiring-sweep"
+              >
+                <animateTransform
+                  attributeName="transform"
+                  type="rotate"
+                  from={`0 ${cx} ${cy}`}
+                  to={`360 ${cx} ${cy}`}
+                  dur="3s"
+                  repeatCount="indefinite"
+                />
+              </path>
+            </g>
+          )}
           {[
             ['N', cx, 11],
             ['S', cx, 196],
             ['E', 192, cy + 3],
             ['W', 8, cy + 3]
           ].map(([t, x, y]) => (
-            <text key={t as string} x={x as number} y={y as number} textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize={11} fontWeight="bold" fontFamily="monospace">
+            <text
+              key={t as string}
+              x={x as number}
+              y={y as number}
+              textAnchor="middle"
+              fill="rgba(255,255,255,0.45)"
+              fontSize={11}
+              fontWeight="bold"
+              fontFamily="monospace"
+            >
               {t}
             </text>
           ))}
@@ -1105,15 +1391,39 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
             const color = snrColor(s.snr)
             return (
               <g key={s.prn}>
-                <circle cx={x} cy={y} r={6} fill={s.used ? color : '#161616'} stroke={s.used ? 'rgba(255,255,255,0.85)' : color} strokeWidth={s.used ? 1 : 1.5} />
-                <text x={x} y={y + 15} textAnchor="middle" fill="rgba(255,255,255,0.65)" fontSize={8} fontWeight={600} fontFamily="monospace">
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={6}
+                  fill={s.used ? color : '#161616'}
+                  stroke={s.used ? 'rgba(255,255,255,0.85)' : color}
+                  strokeWidth={s.used ? 1 : 1.5}
+                />
+                <text
+                  x={x}
+                  y={y + 15}
+                  textAnchor="middle"
+                  fill="rgba(255,255,255,0.65)"
+                  fontSize={8}
+                  fontWeight={600}
+                  fontFamily="monospace"
+                >
                   {s.prn}
                 </text>
               </g>
             )
           })}
           {plotted.length === 0 && (
-            <text x={cx} y={cy + 4} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize={12} fontWeight={600} letterSpacing={1} fontFamily="monospace">
+            <text
+              x={cx}
+              y={cy + 4}
+              textAnchor="middle"
+              fill="rgba(255,255,255,0.5)"
+              fontSize={12}
+              fontWeight={600}
+              letterSpacing={1}
+              fontFamily="monospace"
+            >
               {'SEARCHING\u2026'}
             </text>
           )}
@@ -1141,19 +1451,57 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {ttffRow}
           {stat('SATS', `${sky.satsUsed} used \u00b7 ${sky.satsInView} in view`)}
-          {stat('HDOP', sky.hdop !== null ? `${sky.hdop.toFixed(1)} ${q.label}` : '\u2014', q.color)}
-          {stat('POS', sky.lat !== null && sky.lon !== null ? `${sky.lat.toFixed(4)}, ${sky.lon.toFixed(4)}` : 'no fix', sky.lat !== null ? '#ddd' : '#777')}
+          {stat(
+            'HDOP',
+            sky.hdop !== null ? `${sky.hdop.toFixed(1)} ${q.label}` : '\u2014',
+            q.color
+          )}
+          {stat(
+            'POS',
+            sky.lat !== null && sky.lon !== null
+              ? `${sky.lat.toFixed(4)}, ${sky.lon.toFixed(4)}`
+              : 'no fix',
+            sky.lat !== null ? '#ddd' : '#777'
+          )}
         </div>
         <div style={{ marginTop: 'auto' }}>
-          <div style={{ color: '#aaa', fontSize: 11, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace', marginBottom: 2 }}>
+          <div
+            style={{
+              color: '#aaa',
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: 2,
+              fontFamily: 'monospace',
+              marginBottom: 2
+            }}
+          >
             SIGNAL (dB-Hz)
           </div>
           {ordered.length > 0 && (
-            <svg viewBox="0 0 280 78" style={{ width: '100%', display: 'block' }} preserveAspectRatio="xMidYMid meet">
+            <svg
+              viewBox="0 0 280 78"
+              style={{ width: '100%', display: 'block' }}
+              preserveAspectRatio="xMidYMid meet"
+            >
               {[20, 30, 40].map((db) => (
                 <g key={db}>
-                  <line x1={0} y1={yForSnr(db)} x2={280} y2={yForSnr(db)} stroke="rgba(255,255,255,0.10)" strokeWidth={0.75} strokeDasharray="3 3" />
-                  <text x={1} y={yForSnr(db) - 1.5} fill="rgba(255,255,255,0.5)" fontSize={8} fontWeight={600} fontFamily="monospace">
+                  <line
+                    x1={0}
+                    y1={yForSnr(db)}
+                    x2={280}
+                    y2={yForSnr(db)}
+                    stroke="rgba(255,255,255,0.10)"
+                    strokeWidth={0.75}
+                    strokeDasharray="3 3"
+                  />
+                  <text
+                    x={1}
+                    y={yForSnr(db) - 1.5}
+                    fill="rgba(255,255,255,0.5)"
+                    fontSize={8}
+                    fontWeight={600}
+                    fontFamily="monospace"
+                  >
                     {db}
                   </text>
                 </g>
@@ -1167,8 +1515,24 @@ function GpsSkyPanel({ telemetry }: { telemetry: MotoTelemetry }) {
                 const color = snrColor(s.snr)
                 return (
                   <g key={s.prn}>
-                    <rect x={x} y={64 - height} width={bw} height={height} rx={2} fill={color} opacity={s.used ? 1 : 0.4} />
-                    <text x={x + bw / 2} y={75} textAnchor="middle" fill="rgba(255,255,255,0.65)" fontSize={9} fontWeight={600} fontFamily="monospace">
+                    <rect
+                      x={x}
+                      y={64 - height}
+                      width={bw}
+                      height={height}
+                      rx={2}
+                      fill={color}
+                      opacity={s.used ? 1 : 0.4}
+                    />
+                    <text
+                      x={x + bw / 2}
+                      y={75}
+                      textAnchor="middle"
+                      fill="rgba(255,255,255,0.65)"
+                      fontSize={9}
+                      fontWeight={600}
+                      fontFamily="monospace"
+                    >
                       {s.prn}
                     </text>
                   </g>
@@ -1193,8 +1557,24 @@ function RideDynamicsPanel({
 }) {
   if (telemetry.leanDeg === null && telemetry.gForceX === null) {
     return (
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: '#888', fontSize: 14, fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <div
+          style={{
+            color: '#888',
+            fontSize: 14,
+            fontWeight: 800,
+            letterSpacing: 2,
+            fontFamily: 'monospace'
+          }}
+        >
           NO IMU DATA
         </div>
       </div>
@@ -1213,8 +1593,12 @@ function RideDynamicsPanel({
   const attitudeClip = useSvgId('ride-attitude')
 
   const stat = (label: string, value: string, color = '#fff') => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-      <span style={{ color: '#dcdcdc', fontSize: 14, fontWeight: 800, letterSpacing: 0.5 }}>{label}</span>
+    <div
+      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}
+    >
+      <span style={{ color: '#dcdcdc', fontSize: 14, fontWeight: 800, letterSpacing: 0.5 }}>
+        {label}
+      </span>
       <span style={{ color, fontSize: 17, fontWeight: 900, fontFamily: 'monospace' }}>{value}</span>
     </div>
   )
@@ -1229,9 +1613,22 @@ function RideDynamicsPanel({
   const peakR = Math.min(58, telemetry.imuPeak.g * gScale)
 
   return (
-    <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 6, padding: '6px 12px 4px 8px', fontFamily: 'sans-serif' }}>
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        gap: 6,
+        padding: '6px 12px 4px 8px',
+        fontFamily: 'sans-serif'
+      }}
+    >
       <div style={{ flex: '0 0 33%', minWidth: 0, display: 'flex', justifyContent: 'center' }}>
-        <svg viewBox="0 0 168 210" style={{ height: '100%', display: 'block' }} preserveAspectRatio="xMidYMid meet">
+        <svg
+          viewBox="0 0 168 210"
+          style={{ height: '100%', display: 'block' }}
+          preserveAspectRatio="xMidYMid meet"
+        >
           <defs>
             <clipPath id={attitudeClip}>
               <circle cx={84} cy={90} r={70} />
@@ -1243,9 +1640,23 @@ function RideDynamicsPanel({
           </defs>
           <g clipPath={`url(#${attitudeClip})`}>
             <g transform={`rotate(${lean}, 84, ${90 + pitch * 2.2})`}>
-              <rect x={-126} y={90 + pitch * 2.2 - 210} width={420} height={210} fill={`url(#${attitudeClip}-sky)`} />
+              <rect
+                x={-126}
+                y={90 + pitch * 2.2 - 210}
+                width={420}
+                height={210}
+                fill={`url(#${attitudeClip}-sky)`}
+              />
               <rect x={-126} y={90 + pitch * 2.2} width={420} height={210} fill="#5c3412" />
-              <line x1={-126} y1={90 + pitch * 2.2} x2={294} y2={90 + pitch * 2.2} stroke="#fff" strokeWidth={2} opacity={0.9} />
+              <line
+                x1={-126}
+                y1={90 + pitch * 2.2}
+                x2={294}
+                y2={90 + pitch * 2.2}
+                stroke="#fff"
+                strokeWidth={2}
+                opacity={0.9}
+              />
               {[-10, 10].map((p) => (
                 <line
                   key={p}
@@ -1260,23 +1671,60 @@ function RideDynamicsPanel({
               ))}
             </g>
           </g>
-          <circle cx={84} cy={90} r={70} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={1.5} />
+          <circle
+            cx={84}
+            cy={90}
+            r={70}
+            fill="none"
+            stroke="rgba(255,255,255,0.25)"
+            strokeWidth={1.5}
+          />
           {[-45, -30, -15, 0, 15, 30, 45].map((d) => {
             const o = rim(d, 71)
             const i = rim(d, d === 0 ? 61 : 64)
-            return <line key={d} x1={o.x} y1={o.y} x2={i.x} y2={i.y} stroke="rgba(255,255,255,0.6)" strokeWidth={d === 0 ? 2 : 1.2} />
+            return (
+              <line
+                key={d}
+                x1={o.x}
+                y1={o.y}
+                x2={i.x}
+                y2={i.y}
+                stroke="rgba(255,255,255,0.6)"
+                strokeWidth={d === 0 ? 2 : 1.2}
+              />
+            )
           })}
           {telemetry.imuPeak.leanL > 1 &&
             (() => {
               const p = rim(-telemetry.imuPeak.leanL, 71)
               const q = rim(-telemetry.imuPeak.leanL, 61)
-              return <line x1={p.x} y1={p.y} x2={q.x} y2={q.y} stroke="#ff8a65" strokeWidth={2.4} strokeLinecap="round" />
+              return (
+                <line
+                  x1={p.x}
+                  y1={p.y}
+                  x2={q.x}
+                  y2={q.y}
+                  stroke="#ff8a65"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                />
+              )
             })()}
           {telemetry.imuPeak.leanR > 1 &&
             (() => {
               const p = rim(telemetry.imuPeak.leanR, 71)
               const q = rim(telemetry.imuPeak.leanR, 61)
-              return <line x1={p.x} y1={p.y} x2={q.x} y2={q.y} stroke="#ff8a65" strokeWidth={2.4} strokeLinecap="round" />
+              return (
+                <line
+                  x1={p.x}
+                  y1={p.y}
+                  x2={q.x}
+                  y2={q.y}
+                  stroke="#ff8a65"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                />
+              )
             })()}
           {(() => {
             const p = rim(lean, 68)
@@ -1288,49 +1736,428 @@ function RideDynamicsPanel({
               />
             )
           })()}
-          <line x1={54} y1={90} x2={75} y2={90} stroke="#ffd700" strokeWidth={3} strokeLinecap="round" />
-          <line x1={93} y1={90} x2={114} y2={90} stroke="#ffd700" strokeWidth={3} strokeLinecap="round" />
+          <line
+            x1={54}
+            y1={90}
+            x2={75}
+            y2={90}
+            stroke="#ffd700"
+            strokeWidth={3}
+            strokeLinecap="round"
+          />
+          <line
+            x1={93}
+            y1={90}
+            x2={114}
+            y2={90}
+            stroke="#ffd700"
+            strokeWidth={3}
+            strokeLinecap="round"
+          />
           <circle cx={84} cy={90} r={2.6} fill="#ffd700" />
-          <text x={84} y={190} textAnchor="middle" fill={leanColor(absLean)} fontSize={34} fontWeight="900" fontFamily="monospace">
+          <text
+            x={84}
+            y={190}
+            textAnchor="middle"
+            fill={leanColor(absLean)}
+            fontSize={34}
+            fontWeight="900"
+            fontFamily="monospace"
+          >
             {`${absLean}\u00b0${side}`}
           </text>
-          <text x={84} y={205} textAnchor="middle" fill="#cfcfcf" fontSize={12} fontWeight={800} letterSpacing={3} fontFamily="monospace">
+          <text
+            x={84}
+            y={205}
+            textAnchor="middle"
+            fill="#cfcfcf"
+            fontSize={12}
+            fontWeight={800}
+            letterSpacing={3}
+            fontFamily="monospace"
+          >
             LEAN
           </text>
         </svg>
       </div>
       <div style={{ flex: '0 0 30%', minWidth: 0, display: 'flex', justifyContent: 'center' }}>
-        <svg viewBox="0 0 150 210" style={{ height: '100%', display: 'block' }} preserveAspectRatio="xMidYMid meet">
-          <circle cx={75} cy={88} r={58} fill="#0c0c0c" stroke="rgba(255,255,255,0.2)" strokeWidth={1.2} />
-          <circle cx={75} cy={88} r={29} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={0.8} strokeDasharray="3 3" />
-          <line x1={17} y1={88} x2={133} y2={88} stroke="rgba(255,255,255,0.12)" strokeWidth={0.8} />
-          <line x1={75} y1={30} x2={75} y2={146} stroke="rgba(255,255,255,0.12)" strokeWidth={0.8} />
-          <text x={75} y={26} textAnchor="middle" fill="rgba(255,255,255,0.55)" fontSize={9} fontWeight={700} fontFamily="monospace">
+        <svg
+          viewBox="0 0 150 210"
+          style={{ height: '100%', display: 'block' }}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <circle
+            cx={75}
+            cy={88}
+            r={58}
+            fill="#0c0c0c"
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth={1.2}
+          />
+          <circle
+            cx={75}
+            cy={88}
+            r={29}
+            fill="none"
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth={0.8}
+            strokeDasharray="3 3"
+          />
+          <line
+            x1={17}
+            y1={88}
+            x2={133}
+            y2={88}
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth={0.8}
+          />
+          <line
+            x1={75}
+            y1={30}
+            x2={75}
+            y2={146}
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth={0.8}
+          />
+          <text
+            x={75}
+            y={26}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.55)"
+            fontSize={9}
+            fontWeight={700}
+            fontFamily="monospace"
+          >
             BRAKE
           </text>
-          <text x={75} y={158} textAnchor="middle" fill="rgba(255,255,255,0.55)" fontSize={9} fontWeight={700} fontFamily="monospace">
+          <text
+            x={75}
+            y={158}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.55)"
+            fontSize={9}
+            fontWeight={700}
+            fontFamily="monospace"
+          >
             ACCEL
           </text>
-          {telemetry.imuPeak.g > 0.05 && <circle cx={75} cy={88} r={peakR} fill="none" stroke="#ffb300" strokeWidth={1.2} strokeDasharray="2 2" opacity={0.7} />}
-          <line x1={75} y1={88} x2={75 + gDx} y2={88 + gDy} stroke={gColor(totalG)} strokeWidth={1.5} opacity={0.5} />
-          <circle cx={75 + gDx} cy={88 + gDy} r={6} fill={gColor(totalG)} stroke="#fff" strokeWidth={1.2} />
-          <text x={75} y={186} textAnchor="middle" fill={gColor(totalG)} fontSize={30} fontWeight="900" fontFamily="monospace">
+          {telemetry.imuPeak.g > 0.05 && (
+            <circle
+              cx={75}
+              cy={88}
+              r={peakR}
+              fill="none"
+              stroke="#ffb300"
+              strokeWidth={1.2}
+              strokeDasharray="2 2"
+              opacity={0.7}
+            />
+          )}
+          <line
+            x1={75}
+            y1={88}
+            x2={75 + gDx}
+            y2={88 + gDy}
+            stroke={gColor(totalG)}
+            strokeWidth={1.5}
+            opacity={0.5}
+          />
+          <circle
+            cx={75 + gDx}
+            cy={88 + gDy}
+            r={6}
+            fill={gColor(totalG)}
+            stroke="#fff"
+            strokeWidth={1.2}
+          />
+          <text
+            x={75}
+            y={186}
+            textAnchor="middle"
+            fill={gColor(totalG)}
+            fontSize={30}
+            fontWeight="900"
+            fontFamily="monospace"
+          >
             {totalG.toFixed(2)}
           </text>
-          <text x={75} y={203} textAnchor="middle" fill="#cfcfcf" fontSize={12} fontWeight={800} letterSpacing={2} fontFamily="monospace">
+          <text
+            x={75}
+            y={203}
+            textAnchor="middle"
+            fill="#cfcfcf"
+            fontSize={12}
+            fontWeight={800}
+            letterSpacing={2}
+            fontFamily="monospace"
+          >
             G-FORCE
           </text>
         </svg>
       </div>
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 9, paddingTop: 50, paddingRight: 2 }}>
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          gap: 9,
+          paddingTop: 50,
+          paddingRight: 2
+        }}
+      >
         {stat('MAX L', `${Math.round(telemetry.imuPeak.leanL)}\u00b0`, '#ff8a65')}
         {stat('MAX R', `${Math.round(telemetry.imuPeak.leanR)}\u00b0`, '#ff8a65')}
-        {stat('PITCH', telemetry.pitchDeg != null ? (absPitch === 0 ? `0\u00b0` : `${pitchDir}${absPitch}\u00b0`) : '\u2014', '#80cbc4')}
-        {stat('PEAK G', telemetry.imuPeak.g > 0.05 ? telemetry.imuPeak.g.toFixed(2) : '\u2014', '#ffb300')}
+        {stat(
+          'PITCH',
+          telemetry.pitchDeg != null
+            ? absPitch === 0
+              ? `0\u00b0`
+              : `${pitchDir}${absPitch}\u00b0`
+            : '\u2014',
+          '#80cbc4'
+        )}
+        {stat(
+          'PEAK G',
+          telemetry.imuPeak.g > 0.05 ? telemetry.imuPeak.g.toFixed(2) : '\u2014',
+          '#ffb300'
+        )}
         <div style={{ marginTop: 4, alignSelf: 'flex-end' }}>
           <ResetMaxButton onReset={actions.resetImuPeak} width={132} />
         </div>
       </div>
+    </div>
+  )
+}
+
+function Cylinder({ temp, dir }: { temp: number | null; dir: -1 | 1 }) {
+  const has = temp !== null
+  const t = temp ?? 0
+  const { color } = has ? chtZone(t) : { color: '#3a3a3a' }
+  const glow = has ? Math.max(0, Math.min(1, (t - 40) / 200)) : 0
+  const filterId = useSvgId(`cyl-glow-${dir === 1 ? 'r' : 'l'}`)
+
+  return (
+    <svg
+      viewBox="0 0 130 96"
+      width="100%"
+      height="96"
+      preserveAspectRatio="xMidYMid meet"
+      style={{ transform: dir === -1 ? 'scaleX(-1)' : undefined }}
+    >
+      <defs>
+        <filter id={filterId} x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="5" />
+        </filter>
+      </defs>
+      {has && glow > 0.02 && (
+        <g filter={`url(#${filterId})`} opacity={0.25 + glow * 0.6}>
+          <rect x={28} y={26} width={86} height={44} rx={10} fill={color} />
+        </g>
+      )}
+      <rect
+        x={2}
+        y={34}
+        width={26}
+        height={28}
+        rx={4}
+        fill="#2a2a2a"
+        stroke="#444"
+        strokeWidth={1}
+      />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <rect
+          key={i}
+          x={30 + i * 14}
+          y={24}
+          width={9}
+          height={48}
+          rx={2}
+          fill={has ? color : '#333'}
+          opacity={has ? 0.55 + glow * 0.35 : 0.5}
+        />
+      ))}
+      <rect
+        x={100}
+        y={20}
+        width={20}
+        height={56}
+        rx={6}
+        fill={has ? color : '#3a3a3a'}
+        opacity={has ? 0.85 : 0.6}
+      />
+      <circle cx={123} cy={48} r={3.4} fill="#888" />
+    </svg>
+  )
+}
+
+function CylinderHeadsPanel({
+  telemetry,
+  actions
+}: {
+  telemetry: MotoTelemetry
+  actions: MotoActions
+}) {
+  if (telemetry.chtLeftC === null && telemetry.chtRightC === null) {
+    return (
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <div
+          style={{
+            color: '#888',
+            fontSize: 14,
+            fontWeight: 800,
+            letterSpacing: 2,
+            fontFamily: 'monospace'
+          }}
+        >
+          NO CYLINDER-HEAD DATA
+        </div>
+      </div>
+    )
+  }
+
+  const reading = (label: string, temp: number | null, peak: number) => {
+    const has = temp !== null
+    const zone = has ? chtZone(temp) : { label: '\u2014', color: '#777' }
+    return { label, has, temp, zone, peak }
+  }
+
+  const left = reading('L', telemetry.chtLeftC, telemetry.chtPeak.left)
+  const right = reading('R', telemetry.chtRightC, telemetry.chtPeak.right)
+  const delta =
+    telemetry.chtLeftC !== null && telemetry.chtRightC !== null
+      ? Math.abs(Math.round(telemetry.chtLeftC - telemetry.chtRightC))
+      : null
+  const deltaColor =
+    delta === null ? '#777' : delta < 20 ? '#9ccc65' : delta < 40 ? '#ffca28' : '#ef5350'
+
+  const side = (s: typeof left, dir: -1 | 1) => (
+    <div
+      style={{
+        flex: 1,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 1
+      }}
+    >
+      <div
+        style={{
+          color: '#dcdcdc',
+          fontSize: 14,
+          fontWeight: 900,
+          letterSpacing: 3,
+          fontFamily: 'monospace'
+        }}
+      >
+        {s.label} HEAD
+      </div>
+      <Cylinder temp={s.temp} dir={dir} />
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+        <span
+          style={{
+            color: s.has ? s.zone.color : '#fff',
+            fontSize: 40,
+            fontWeight: 900,
+            fontFamily: 'monospace',
+            lineHeight: 1
+          }}
+        >
+          {s.has ? Math.round(s.temp as number) : '--'}
+        </span>
+        <span style={{ color: '#bbb', fontSize: 16, fontWeight: 700, fontFamily: 'monospace' }}>
+          {'\u00b0C'}
+        </span>
+      </div>
+      <div
+        style={{
+          color: s.has ? s.zone.color : '#777',
+          fontSize: 14,
+          fontWeight: 800,
+          letterSpacing: 2,
+          fontFamily: 'monospace'
+        }}
+      >
+        {s.zone.label}
+      </div>
+      <div style={{ color: '#aaa', fontSize: 12, fontWeight: 700, fontFamily: 'monospace' }}>
+        {s.peak > 0 ? `MAX ${Math.round(s.peak)}\u00b0` : ''}
+      </div>
+    </div>
+  )
+
+  return (
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '8px 12px 4px',
+        fontFamily: 'sans-serif'
+      }}
+    >
+      {side(left, -1)}
+      <div
+        style={{
+          flex: '0 0 124px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 2,
+          paddingTop: 20
+        }}
+      >
+        <span
+          style={{
+            color: '#888',
+            fontSize: 11,
+            fontWeight: 800,
+            letterSpacing: 2,
+            fontFamily: 'monospace'
+          }}
+        >
+          {'\u25c4 BOXER \u25ba'}
+        </span>
+        <span
+          style={{
+            color: '#888',
+            fontSize: 12,
+            fontWeight: 800,
+            letterSpacing: 2,
+            fontFamily: 'monospace',
+            marginTop: 4
+          }}
+        >
+          {'\u0394T'}
+        </span>
+        <span
+          style={{
+            color: deltaColor,
+            fontSize: 30,
+            fontWeight: 900,
+            fontFamily: 'monospace',
+            lineHeight: 1
+          }}
+        >
+          {delta !== null ? `${delta}\u00b0` : '\u2014'}
+        </span>
+        <div style={{ marginTop: 8 }}>
+          <ResetMaxButton onReset={actions.resetChtPeak} width={116} />
+        </div>
+      </div>
+      {side(right, 1)}
     </div>
   )
 }
@@ -1379,14 +2206,30 @@ function ResetMaxButton({ onReset, width = 120 }: { onReset: () => void; width?:
           onReset()
           setConfirm(false)
         }}
-        style={{ ...base, minHeight: 44, padding: '10px 12px', fontSize: 14, color: '#fff', background: '#7a1414', border: '2px solid #ff6b6b' }}
+        style={{
+          ...base,
+          minHeight: 44,
+          padding: '10px 12px',
+          fontSize: 14,
+          color: '#fff',
+          background: '#7a1414',
+          border: '2px solid #ff6b6b'
+        }}
       >
         CONFIRM
       </button>
       <button
         type="button"
         onClick={() => setConfirm(false)}
-        style={{ ...base, minHeight: 40, padding: '9px 12px', fontSize: 14, color: '#ccc', background: '#242424', border: '2px solid #555' }}
+        style={{
+          ...base,
+          minHeight: 40,
+          padding: '9px 12px',
+          fontSize: 14,
+          color: '#ccc',
+          background: '#242424',
+          border: '2px solid #555'
+        }}
       >
         CANCEL
       </button>
@@ -1411,7 +2254,9 @@ function MetricGraph({
     ? 'gps'
     : IMU_KEYS.includes(metricKey)
       ? 'imu'
-      : null
+      : CHT_KEYS.includes(metricKey)
+        ? 'cht'
+        : null
   const keys: MetricKey[] = metricKey === 'ambientTemp' ? ['ambientTemp', 'piTemp'] : [metricKey]
   const compact = topPanel !== null || keys.length > 1
   const [nowMs, setNowMs] = React.useState(() => Date.now())
@@ -1491,7 +2336,10 @@ function MetricGraph({
       </button>
 
       {topPanel === 'gps' && <GpsSkyPanel telemetry={telemetry} />}
-      {topPanel === 'imu' && <RideDynamicsPanel telemetry={telemetry} settings={settings} actions={actions} />}
+      {topPanel === 'imu' && (
+        <RideDynamicsPanel telemetry={telemetry} settings={settings} actions={actions} />
+      )}
+      {topPanel === 'cht' && <CylinderHeadsPanel telemetry={telemetry} actions={actions} />}
 
       {(topPanel ? [metricKey] : keys).map((key, index) => (
         <GraphPane
@@ -1534,7 +2382,11 @@ function MetricGraph({
             this closes the dashboard app
           </div>
           <div style={{ display: 'flex', gap: 16 }}>
-            <button type="button" onClick={() => setConfirmQuit(false)} style={actionBtn('#2a2a2a', '#ccc')}>
+            <button
+              type="button"
+              onClick={() => setConfirmQuit(false)}
+              style={actionBtn('#2a2a2a', '#ccc')}
+            >
               CANCEL
             </button>
             <button
@@ -1593,7 +2445,9 @@ function GraphPane({
   const xFor = (ts: number) => cx + ((ts - windowStart) / GRAPH_WINDOW_MS) * cw
   const yFor = (v: number) => cy + ch - ((v - yMin) / (yMax - yMin)) * ch
   const pts = visible.map((p) => ({ x: xFor(p.ts), y: yFor(p.val) }))
-  const linePath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  const linePath = pts
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(' ')
   const areaPath =
     pts.length > 1
       ? `M${pts[0].x.toFixed(1)},${cy + ch} ${pts.map((p) => `L${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')} L${pts[pts.length - 1].x.toFixed(1)},${cy + ch} Z`
@@ -1633,7 +2487,9 @@ function GraphPane({
     if (!panRef.current.active) return
     const dx = e.clientX - panRef.current.startX
     const msPx = GRAPH_WINDOW_MS / cw
-    setViewOffset(Math.max(0, Math.min(GRAPH_MAX_AGE_MS - GRAPH_WINDOW_MS, panRef.current.startOff + dx * msPx)))
+    setViewOffset(
+      Math.max(0, Math.min(GRAPH_MAX_AGE_MS - GRAPH_WINDOW_MS, panRef.current.startOff + dx * msPx))
+    )
   }
   const onPtrUp = () => {
     panRef.current.active = false
@@ -1643,21 +2499,72 @@ function GraphPane({
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       {!first && (
         <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', paddingTop: 3 }}>
-          <div style={{ width: '75%', height: 2, borderRadius: 1, background: 'rgba(255,255,255,0.22)' }} />
+          <div
+            style={{
+              width: '75%',
+              height: 2,
+              borderRadius: 1,
+              background: 'rgba(255,255,255,0.22)'
+            }}
+          />
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: first ? '12px 70px 0 14px' : '8px 14px 0', flexShrink: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: first ? '12px 70px 0 14px' : '8px 14px 0',
+          flexShrink: 0
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: 3, color: cfg.color, fontFamily: 'monospace' }}>{cfg.label}</span>
+          <span
+            style={{
+              fontSize: 16,
+              fontWeight: 800,
+              letterSpacing: 3,
+              color: cfg.color,
+              fontFamily: 'monospace'
+            }}
+          >
+            {cfg.label}
+          </span>
           {isLive ? (
-            <span style={{ fontSize: 15, color: '#5fd0ff', fontWeight: 800, letterSpacing: 2, fontFamily: 'monospace' }}>{'\u25cf LIVE'}</span>
+            <span
+              style={{
+                fontSize: 15,
+                color: '#5fd0ff',
+                fontWeight: 800,
+                letterSpacing: 2,
+                fontFamily: 'monospace'
+              }}
+            >
+              {'\u25cf LIVE'}
+            </span>
           ) : (
-            <span style={{ fontSize: 15, color: '#fff', fontWeight: 700, letterSpacing: 1, fontFamily: 'monospace' }}>{Math.round(viewOffset / 60000)}m ago</span>
+            <span
+              style={{
+                fontSize: 15,
+                color: '#fff',
+                fontWeight: 700,
+                letterSpacing: 1,
+                fontFamily: 'monospace'
+              }}
+            >
+              {Math.round(viewOffset / 60000)}m ago
+            </span>
           )}
         </div>
         {confirmReset ? (
           <div style={{ display: 'flex', gap: 10 }}>
-            <button type="button" onClick={() => setConfirmReset(false)} style={actionBtn('#2a2a2a', '#aaa', compact)}>CANCEL</button>
+            <button
+              type="button"
+              onClick={() => setConfirmReset(false)}
+              style={actionBtn('#2a2a2a', '#aaa', compact)}
+            >
+              CANCEL
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -1670,22 +2577,65 @@ function GraphPane({
             </button>
           </div>
         ) : (
-          <button type="button" onClick={() => setConfirmReset(true)} style={actionBtn('#2a0808', '#ff6b6b', compact)}>
+          <button
+            type="button"
+            onClick={() => setConfirmReset(true)}
+            style={actionBtn('#2a0808', '#ff6b6b', compact)}
+          >
             RESET
           </button>
         )}
       </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', padding: compact ? '2px 14px 4px' : '4px 14px 8px', flexShrink: 0 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          padding: compact ? '2px 14px 4px' : '4px 14px 8px',
+          flexShrink: 0
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <span style={{ fontSize: compact ? 46 : 84, fontWeight: 900, color: valueColor, lineHeight: 0.88, fontFamily: 'monospace', letterSpacing: 0 }}>
+          <span
+            style={{
+              fontSize: compact ? 46 : 84,
+              fontWeight: 900,
+              color: valueColor,
+              lineHeight: 0.88,
+              fontFamily: 'monospace',
+              letterSpacing: 0
+            }}
+          >
             {current !== null ? cfg.fmtVal(current) : '--'}
           </span>
-          <span style={{ fontSize: compact ? 20 : 26, fontWeight: 700, color: '#e8e8e8', fontFamily: 'monospace' }}>{cfg.unit}</span>
+          <span
+            style={{
+              fontSize: compact ? 20 : 26,
+              fontWeight: 700,
+              color: '#e8e8e8',
+              fontFamily: 'monospace'
+            }}
+          >
+            {cfg.unit}
+          </span>
         </div>
-        <div style={{ fontSize: 20, color: '#fff', fontWeight: 800, fontFamily: 'monospace', textAlign: 'right', lineHeight: 1.35 }}>
+        <div
+          style={{
+            fontSize: 20,
+            color: '#fff',
+            fontWeight: 800,
+            fontFamily: 'monospace',
+            textAlign: 'right',
+            lineHeight: 1.35
+          }}
+        >
           {visMax !== null && <div>MAX {cfg.fmtVal(visMax)}</div>}
           {visMin !== null && <div>MIN {cfg.fmtVal(visMin)}</div>}
-          {!compact && <div style={{ fontSize: 14, color: '#e0e0e0', fontWeight: 700, marginTop: 4 }}>{`${data.length} pts \u00b7 drag \u2190 \u2192`}</div>}
+          {!compact && (
+            <div
+              style={{ fontSize: 14, color: '#e0e0e0', fontWeight: 700, marginTop: 4 }}
+            >{`${data.length} pts \u00b7 drag \u2190 \u2192`}</div>
+          )}
         </div>
       </div>
       <svg
@@ -1723,8 +2673,23 @@ function GraphPane({
           const y = yFor(v)
           return (
             <g key={i}>
-              <line x1={cx} y1={y} x2={cx + cw} y2={y} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
-              <text x={cx - 5} y={y + 5} textAnchor="end" fill="rgba(255,255,255,0.92)" fontSize={15} fontWeight={700} fontFamily="monospace">
+              <line
+                x1={cx}
+                y1={y}
+                x2={cx + cw}
+                y2={y}
+                stroke="rgba(255,255,255,0.1)"
+                strokeWidth={1}
+              />
+              <text
+                x={cx - 5}
+                y={y + 5}
+                textAnchor="end"
+                fill="rgba(255,255,255,0.92)"
+                fontSize={15}
+                fontWeight={700}
+                fontFamily="monospace"
+              >
                 {cfg.fmtVal(v)}
               </text>
             </g>
@@ -1732,8 +2697,23 @@ function GraphPane({
         })}
         {xLabels.map(({ x, label }) => (
           <g key={`${x}:${label}`}>
-            <line x1={x} y1={cy} x2={x} y2={cy + ch} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
-            <text x={x} y={cy + ch + 18} textAnchor="middle" fill="rgba(255,255,255,0.92)" fontSize={15} fontWeight={700} fontFamily="monospace">
+            <line
+              x1={x}
+              y1={cy}
+              x2={x}
+              y2={cy + ch}
+              stroke="rgba(255,255,255,0.1)"
+              strokeWidth={1}
+            />
+            <text
+              x={x}
+              y={cy + ch + 18}
+              textAnchor="middle"
+              fill="rgba(255,255,255,0.92)"
+              fontSize={15}
+              fontWeight={700}
+              fontFamily="monospace"
+            >
               {label}
             </text>
           </g>
@@ -1747,12 +2727,24 @@ function GraphPane({
                 const vBot = Math.max(lo, yMin)
                 if (vTop <= vBot) return null
                 const yT = yFor(vTop)
-                return <rect key={i} x={cx} width={cw} y={yT} height={yFor(vBot) - yT} fill={z.color} opacity={0.3} />
+                return (
+                  <rect
+                    key={i}
+                    x={cx}
+                    width={cw}
+                    y={yT}
+                    height={yFor(vBot) - yT}
+                    fill={z.color}
+                    opacity={0.3}
+                  />
+                )
               })}
             </g>
           </g>
         )}
-        {areaPath && !zones && <path d={areaPath} fill={`url(#${gradId})`} clipPath={`url(#${clipId})`} />}
+        {areaPath && !zones && (
+          <path d={areaPath} fill={`url(#${gradId})`} clipPath={`url(#${clipId})`} />
+        )}
         {zones?.map((z, i) => {
           if (i === 0 || !z.label) return null
           const thr = zones[i - 1].max
@@ -1760,20 +2752,65 @@ function GraphPane({
           const y = yFor(thr)
           return (
             <g key={`thr-${i}`}>
-              <line x1={cx} y1={y} x2={cx + cw} y2={y} stroke={z.color} strokeWidth={1} strokeDasharray="4 4" opacity={0.55} />
-              <text x={cx + cw - 4} y={y - 5} textAnchor="end" fill={z.color} fontSize={14} fontWeight={800} fontFamily="monospace">
+              <line
+                x1={cx}
+                y1={y}
+                x2={cx + cw}
+                y2={y}
+                stroke={z.color}
+                strokeWidth={1}
+                strokeDasharray="4 4"
+                opacity={0.55}
+              />
+              <text
+                x={cx + cw - 4}
+                y={y - 5}
+                textAnchor="end"
+                fill={z.color}
+                fontSize={14}
+                fontWeight={800}
+                fontFamily="monospace"
+              >
                 {`${z.label} ${cfg.fmtVal(thr)}\u00b0`}
               </text>
             </g>
           )
         })}
-        {linePath && <path d={linePath} fill="none" stroke={zones ? 'rgba(255,255,255,0.9)' : cfg.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" clipPath={`url(#${clipId})`} />}
+        {linePath && (
+          <path
+            d={linePath}
+            fill="none"
+            stroke={zones ? 'rgba(255,255,255,0.9)' : cfg.color}
+            strokeWidth={2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            clipPath={`url(#${clipId})`}
+          />
+        )}
         {visible.length < 2 && (
-          <text x={cx + cw / 2} y={cy + ch / 2 + 6} textAnchor="middle" fill="rgba(255,255,255,0.6)" fontSize={19} fontWeight={700} letterSpacing={2} fontFamily="monospace">
+          <text
+            x={cx + cw / 2}
+            y={cy + ch / 2 + 6}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.6)"
+            fontSize={19}
+            fontWeight={700}
+            letterSpacing={2}
+            fontFamily="monospace"
+          >
             NO DATA IN WINDOW
           </text>
         )}
-        <rect x={cx} y={cy} width={cw} height={ch} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={0.5} rx={4} />
+        <rect
+          x={cx}
+          y={cy}
+          width={cw}
+          height={ch}
+          fill="none"
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth={0.5}
+          rx={4}
+        />
         {data.length > 0 &&
           (() => {
             const totalRange = Math.max(data[data.length - 1].ts - data[0].ts, GRAPH_WINDOW_MS)
@@ -1782,8 +2819,23 @@ function GraphPane({
             const barX = cx + cw - (viewOffset / Math.max(1, maxOff)) * (cw - barW) - barW
             return (
               <>
-                <rect x={cx} y={cy + ch + 30} width={cw} height={4} fill="rgba(255,255,255,0.05)" rx={2} />
-                <rect x={barX} y={cy + ch + 30} width={barW} height={4} fill={cfg.color} rx={2} opacity={0.45} />
+                <rect
+                  x={cx}
+                  y={cy + ch + 30}
+                  width={cw}
+                  height={4}
+                  fill="rgba(255,255,255,0.05)"
+                  rx={2}
+                />
+                <rect
+                  x={barX}
+                  y={cy + ch + 30}
+                  width={barW}
+                  height={4}
+                  fill={cfg.color}
+                  rx={2}
+                  opacity={0.45}
+                />
               </>
             )
           })()}
@@ -1890,7 +2942,12 @@ export function ProjectionSensorOverlay() {
           pointerEvents: 'auto'
         }}
       >
-        <ChtGauge side="L" value={telemetry.chtLeftC} actions={actions} background={arcBackground} />
+        <ChtGauge
+          side="L"
+          value={telemetry.chtLeftC}
+          actions={actions}
+          background={arcBackground}
+        />
       </div>
       <div
         style={{
@@ -1903,7 +2960,12 @@ export function ProjectionSensorOverlay() {
           pointerEvents: 'auto'
         }}
       >
-        <ChtGauge side="R" value={telemetry.chtRightC} actions={actions} background={arcBackground} />
+        <ChtGauge
+          side="R"
+          value={telemetry.chtRightC}
+          actions={actions}
+          background={arcBackground}
+        />
       </div>
 
       {activeGraph && (

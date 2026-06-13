@@ -419,9 +419,10 @@ describe('Projection page', () => {
     expect(graph).toHaveTextContent('3 used \u00b7 5 in view')
     expect(graph).toHaveTextContent('SEARCHING\u2026')
     expect(graph).toHaveTextContent('SIGNAL (dB-Hz)')
+    expect(screen.getByTestId('projection-gps-acquiring-sweep')).toBeInTheDocument()
   })
 
-  test('renders cylinder-head graphs as full single charts like the reference dashboard', async () => {
+  test('renders cylinder-head graph with the reference twin-head panel above history', async () => {
     const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1000)
 
     render(<Projection {...baseProps()} />)
@@ -437,15 +438,20 @@ describe('Projection page', () => {
     fireEvent.click(screen.getByLabelText('L cylinder head temperature'))
 
     const graph = screen.getByTestId('projection-metric-graph')
+    expect(graph).toHaveTextContent('L HEAD')
+    expect(graph).toHaveTextContent('R HEAD')
+    expect(graph).toHaveTextContent('\u25c4 BOXER \u25ba')
+    expect(graph).toHaveTextContent('\u0394T')
+    expect(graph).toHaveTextContent('12\u00b0')
+    expect(graph).toHaveTextContent('NORMAL')
+    expect(graph).toHaveTextContent('WARM')
+    expect(graph).toHaveTextContent('RESET MAX')
     expect(graph).toHaveTextContent('CHT LEFT')
     expect(graph).toHaveTextContent('\u25cf LIVE')
     expect(graph).toHaveTextContent('151')
     expect(graph).toHaveTextContent('MAX 151')
     expect(graph).toHaveTextContent('MIN 151')
-    expect(graph).toHaveTextContent('2 pts \u00b7 drag \u2190 \u2192')
-    expect(graph).not.toHaveTextContent('L HEAD')
-    expect(graph).not.toHaveTextContent('R HEAD')
-    expect(graph).not.toHaveTextContent('\u25c4 BOXER \u25ba')
+    expect(graph).not.toHaveTextContent('2 pts \u00b7 drag \u2190 \u2192')
 
     nowSpy.mockRestore()
   })
