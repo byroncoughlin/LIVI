@@ -28,7 +28,7 @@ heading, altitude, ambient temperature, cylinder-head temperature on both jugs,
 lean, pitch, G-force, GPS diagnostics, and Pi CPU temperature.
 
 <p align="center">
-  <img src="documentation/images/round-demo-bezel.png" alt="LIVI MotoCarPlay round demo bezel" width="48%" />
+  <img src="documentation/images/motocarplay-v2-hardware.jpeg" alt="LIVI MotoCarPlay v2 running on the round Waveshare display" width="64%" />
 </p>
 
 > The screenshots in this README are from the LIVI/MotoCarPlay v2 Pi build, not
