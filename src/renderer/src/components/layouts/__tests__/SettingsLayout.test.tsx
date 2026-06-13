@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { SettingsLayout } from '../SettingsLayout'
 
 const navigateMock = jest.fn()
@@ -58,6 +58,7 @@ describe('SettingsLayout', () => {
     )
 
     expect(screen.queryByLabelText('Back')).toBeNull()
+    expect(screen.queryByTestId('settings-section-bar')).toBeNull()
   })
 
   test('closes root settings page back to projection', () => {
@@ -154,6 +155,22 @@ describe('SettingsLayout', () => {
     } finally {
       jest.useRealTimers()
     }
+  })
+
+  test('orders the square-display header controls around the clock', () => {
+    mockPathname = '/settings'
+
+    render(
+      <SettingsLayout title="Settings" showRestart={false}>
+        <div>Body</div>
+      </SettingsLayout>
+    )
+
+    const labels = within(screen.getByTestId('settings-header-actions'))
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label'))
+
+    expect(labels).toEqual(['Reboot Pi', 'Exit to desktop', 'Open Pi monitor', 'Close settings'])
   })
 
   test('opens the Pi monitor via a window event', () => {

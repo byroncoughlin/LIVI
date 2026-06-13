@@ -5,6 +5,7 @@ import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState }
 import { HashRouter as Router, useLocation, useNavigate, useRoutes } from 'react-router'
 import { AppLayout } from './components/layouts/AppLayout'
 import { Cluster, Projection } from './components/pages'
+import { SystemMonitor } from './components/pages/projection/SystemMonitor'
 import { ROUTES } from './constants'
 import { AppContext } from './context'
 import { useActiveControl, useFocus, useKeyDown } from './hooks'
@@ -241,58 +242,61 @@ function AppInner() {
   }, [settings])
 
   return (
-    <AppLayout navRef={navRef} mainRef={mainRef} receivingVideo={receivingVideo}>
-      {settings && (
-        <Projection
-          receivingVideo={receivingVideo}
-          setReceivingVideo={setReceivingVideo}
-          settings={settings}
-          command={keyCommand as KeyCommand}
-          commandCounter={commandCounter}
-          navVideoOverlayActive={navVideoOverlayActive}
-          setNavVideoOverlayActive={setNavVideoOverlayActive}
-        />
-      )}
-      {/* Single cluster overlay, owns the plane reveal. Driven by the guidance auto-switch
-          route (/cluster) OR by a telemetry dash that hosts the cluster (clusterDashActive).*/}
-      {settings && (
-        <Cluster
-          visible={location.pathname === ROUTES.CLUSTER || clusterDashActive}
-          showLoadingPlaceholder={!clusterDashActive}
-        />
-      )}
-      <Box
-        sx={{
-          position: isHostUiRoute ? 'absolute' : 'relative',
-          inset: isHostUiRoute ? 0 : undefined,
-          width: '100%',
-          height: '100%',
-          zIndex: isHostUiRoute ? 1100 : 0,
-          display: isHostUiRoute ? 'grid' : 'block',
-          placeItems: isHostUiRoute ? 'center' : undefined,
-          overflow: 'hidden',
-          pointerEvents:
-            isProjectionRoute || location.pathname === ROUTES.CLUSTER ? 'none' : 'auto',
-          backgroundColor: isHostUiRoute ? 'background.default' : 'transparent'
-        }}
-      >
-        {isHostUiRoute ? (
-          <Box
-            id="round-host-frame"
-            sx={{
-              position: 'relative',
-              width: '100%',
-              height: '100%',
-              overflow: 'hidden'
-            }}
-          >
-            {element}
-          </Box>
-        ) : (
-          element
+    <>
+      <AppLayout navRef={navRef} mainRef={mainRef} receivingVideo={receivingVideo}>
+        {settings && (
+          <Projection
+            receivingVideo={receivingVideo}
+            setReceivingVideo={setReceivingVideo}
+            settings={settings}
+            command={keyCommand as KeyCommand}
+            commandCounter={commandCounter}
+            navVideoOverlayActive={navVideoOverlayActive}
+            setNavVideoOverlayActive={setNavVideoOverlayActive}
+          />
         )}
-      </Box>
-    </AppLayout>
+        {/* Single cluster overlay, owns the plane reveal. Driven by the guidance auto-switch
+          route (/cluster) OR by a telemetry dash that hosts the cluster (clusterDashActive).*/}
+        {settings && (
+          <Cluster
+            visible={location.pathname === ROUTES.CLUSTER || clusterDashActive}
+            showLoadingPlaceholder={!clusterDashActive}
+          />
+        )}
+        <Box
+          sx={{
+            position: isHostUiRoute ? 'absolute' : 'relative',
+            inset: isHostUiRoute ? 0 : undefined,
+            width: '100%',
+            height: '100%',
+            zIndex: isHostUiRoute ? 1100 : 0,
+            display: isHostUiRoute ? 'grid' : 'block',
+            placeItems: isHostUiRoute ? 'center' : undefined,
+            overflow: 'hidden',
+            pointerEvents:
+              isProjectionRoute || location.pathname === ROUTES.CLUSTER ? 'none' : 'auto',
+            backgroundColor: isHostUiRoute ? 'background.default' : 'transparent'
+          }}
+        >
+          {isHostUiRoute ? (
+            <Box
+              id="round-host-frame"
+              sx={{
+                position: 'relative',
+                width: 'min(500px, calc(100% - 16px))',
+                height: 'min(520px, calc(100% - 16px))',
+                overflow: 'hidden'
+              }}
+            >
+              {element}
+            </Box>
+          ) : (
+            element
+          )}
+        </Box>
+      </AppLayout>
+      <SystemMonitor />
+    </>
   )
 }
 

@@ -2278,7 +2278,7 @@ describe('ProjectionService', () => {
     expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
   })
 
-  test('backdrop changes recreate only the native main video player with dynamic options', () => {
+  test('backdrop changes stay on the low-cost native main video path', () => {
     const svc = new ProjectionService() as any
     svc.webContents = { send: jest.fn(), isDestroyed: jest.fn(() => false) }
     svc.stop = jest.fn()
@@ -2303,22 +2303,10 @@ describe('ProjectionService', () => {
       roundedCornerMaskEnabled: true
     })
 
-    expect(first.dispose).toHaveBeenCalledTimes(1)
-    expect(svc.gstVideo).toBeNull()
+    expect(first.dispose).not.toHaveBeenCalled()
+    expect(svc.gstVideo).toBe(first)
     expect(svc.stop).not.toHaveBeenCalled()
-
-    emitMainVideoFrame(svc)
-
-    expect(mockGstVideoConstructor).toHaveBeenCalledTimes(2)
-    expect(mockGstVideoInstances[1].args[3]).toEqual({
-      dynamicBackdrop: true,
-      displayWidth: 800,
-      displayHeight: 800,
-      viewAreaTop: 118,
-      viewAreaBottom: 118,
-      viewAreaLeft: 118,
-      viewAreaRight: 118
-    })
+    expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
   })
 
   test('main video frame burst emits projectionActive once', () => {

@@ -4,6 +4,8 @@ import type { CSSProperties } from 'react'
 export type ViewAreaInsets = { top: number; bottom: number; left: number; right: number }
 
 const CORNER_RADIUS_PX = 38
+const BAR_Z_INDEX = 5
+const CORNER_Z_INDEX = 12
 
 // Passepartout between the LIVI UI and the video plane: paints the configured view-area margins
 // with the theme background, leaving the view area itself transparent so the video shows through.
@@ -44,7 +46,7 @@ export function ViewAreaMask({
     position: 'absolute',
     backgroundColor: maskColor,
     pointerEvents: 'none',
-    zIndex: 5
+    zIndex: BAR_Z_INDEX
   }
   const centerTop = pct(insets.top, displayHeight)
   const centerBottom = pct(insets.bottom, displayHeight)
@@ -58,7 +60,7 @@ export function ViewAreaMask({
     width: radiusX,
     height: radiusY,
     pointerEvents: 'none',
-    zIndex: 6
+    zIndex: CORNER_Z_INDEX
   }
   const roundedStop = '70%'
   const hardStop = '71%'

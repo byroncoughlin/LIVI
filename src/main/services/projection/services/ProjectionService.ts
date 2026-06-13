@@ -302,7 +302,7 @@ export class ProjectionService {
 
   private mainGstVideoOptions(cfg: Config = this.config): GstVideoOptions {
     return {
-      dynamicBackdrop: cfg.backdropEnabled === true,
+      dynamicBackdrop: false,
       displayWidth: cfg.projectionWidth ?? 0,
       displayHeight: cfg.projectionHeight ?? 0,
       viewAreaTop: cfg.projectionViewAreaTop ?? 0,

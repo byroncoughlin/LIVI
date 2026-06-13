@@ -1,3 +1,4 @@
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import { useTheme } from '@mui/material'
 import type { Config } from '@shared/types'
 import { PhoneType } from '@shared/types/Config'
@@ -12,7 +13,6 @@ import { useLiviStore, useStatusStore } from '../../../store/store'
 import { useProjectionMultiTouch } from './hooks/useProjectionTouch'
 import { roundDashboardFramePct } from './motoLayout'
 import { ProjectionSensorOverlay } from './ProjectionSensorOverlay'
-import { SystemMonitor } from './SystemMonitor'
 import { ViewAreaMask } from './ViewAreaMask'
 
 const RETRY_DELAY_MS = 3000
@@ -77,6 +77,7 @@ type WaitingProjectionPaneProps = {
   adapterFound: boolean
   phoneLinked: boolean
   videoStarting: boolean
+  onOpenSettings: () => void
 }
 
 function WaitingProjectionPane({
@@ -84,7 +85,8 @@ function WaitingProjectionPane({
   show,
   adapterFound,
   phoneLinked,
-  videoStarting
+  videoStarting,
+  onOpenSettings
 }: WaitingProjectionPaneProps) {
   const [now, setNow] = useState(() => new Date())
 
@@ -179,7 +181,6 @@ function WaitingProjectionPane({
   return (
     <div
       data-testid="projection-waiting-pane"
-      aria-hidden="true"
       style={{
         position: 'absolute',
         left: frame.left,
@@ -196,6 +197,37 @@ function WaitingProjectionPane({
         fontFamily: 'sans-serif'
       }}
     >
+      <button
+        type="button"
+        aria-label="Open settings"
+        data-testid="projection-waiting-settings-button"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          event.stopPropagation()
+          onOpenSettings()
+        }}
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          width: 54,
+          height: 54,
+          borderRadius: 12,
+          border: '1px solid rgba(255,255,255,0.18)',
+          background: 'rgba(255,255,255,0.075)',
+          color: '#f8fafc',
+          display: 'grid',
+          placeItems: 'center',
+          padding: 0,
+          cursor: 'pointer',
+          pointerEvents: 'auto',
+          touchAction: 'manipulation',
+          WebkitTapHighlightColor: 'transparent',
+          zIndex: 8
+        }}
+      >
+        <SettingsOutlinedIcon style={{ fontSize: 31 }} />
+      </button>
       <div
         style={{
           position: 'absolute',
@@ -277,28 +309,6 @@ function WaitingProjectionPane({
             status.phoneTone,
             'projection-waiting-phone-pill'
           )}
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            left: '50%',
-            bottom: 0,
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: 7
-          }}
-        >
-          {[0, 1, 2].map((index) => (
-            <div
-              key={index}
-              style={{
-                width: index === 1 ? 28 : 8,
-                height: 8,
-                borderRadius: 999,
-                backgroundColor: index === 1 ? status.accentTone : 'rgba(255,255,255,0.24)'
-              }}
-            />
-          ))}
         </div>
       </div>
     </div>
@@ -1109,7 +1119,6 @@ const CarplayComponent: React.FC<CarplayProps> = ({
   const visibleHeight = aaContent?.contentHeight ?? resolvedNegotiatedHeight
   const fillEnabled = motoFillEnabled(settings)
   const maskColor = motoFillHex(settings)
-  const dynamicBackdrop = settings.backdropEnabled === true
   const roundedCornerMask = settings.roundedCornerMaskEnabled === true
 
   const touchHandlers = useProjectionMultiTouch(
@@ -1150,6 +1159,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
           adapterFound={isDongleConnected}
           phoneLinked={phoneLinked}
           videoStarting={waitingVideoStarting}
+          onOpenSettings={gotoHostUI}
         />
       )}
 
@@ -1185,11 +1195,10 @@ const CarplayComponent: React.FC<CarplayProps> = ({
         }}
         color={maskColor}
         cornerMask={roundedCornerMask}
-        barsVisible={!dynamicBackdrop}
+        barsVisible
       />
 
       <ProjectionSensorOverlay />
-      <SystemMonitor />
     </div>
   )
 }

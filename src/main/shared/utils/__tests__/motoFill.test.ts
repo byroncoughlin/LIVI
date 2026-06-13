@@ -13,22 +13,22 @@ describe('moto fill helpers', () => {
     expect(normalizeMotoFillColor('')).toBe(DEFAULT_MOTO_FILL_COLOR)
   })
 
-  test('enables the static fill only for ambient fill', () => {
-    expect(motoFillEnabled({ backdropEnabled: true, ambientFillEnabled: false })).toBe(false)
-    expect(motoFillEnabled({ backdropEnabled: true, ambientFillEnabled: true })).toBe(false)
+  test('enables the static fill for backdrop or ambient fill', () => {
+    expect(motoFillEnabled({ backdropEnabled: true, ambientFillEnabled: false })).toBe(true)
+    expect(motoFillEnabled({ backdropEnabled: true, ambientFillEnabled: true })).toBe(true)
     expect(motoFillEnabled({ backdropEnabled: false, ambientFillEnabled: true })).toBe(true)
     expect(motoFillEnabled({ backdropEnabled: false, ambientFillEnabled: false })).toBe(false)
   })
 
   test('returns a static fill color only when enabled', () => {
-    expect(motoFillHex({ backdropEnabled: true, ambientFillColor: '#142321' })).toBeUndefined()
+    expect(motoFillHex({ backdropEnabled: true, ambientFillColor: '#142321' })).toBe('#142321')
     expect(
       motoFillHex({
         backdropEnabled: true,
         ambientFillEnabled: true,
         ambientFillColor: '#2f473c'
       })
-    ).toBeUndefined()
+    ).toBe('#2f473c')
     expect(motoFillHex({ ambientFillEnabled: true, ambientFillColor: '#2f473c' })).toBe('#2f473c')
     expect(motoFillHex({ ambientFillEnabled: true, ambientFillColor: 'nope' })).toBe(
       DEFAULT_MOTO_FILL_COLOR

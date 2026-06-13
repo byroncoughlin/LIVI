@@ -200,6 +200,41 @@ describe('App', () => {
     expect(screen.getByTestId('routes').parentElement).toBe(frame)
   })
 
+  test('opens the Pi monitor above the settings route', async () => {
+    mockPathname = '/settings'
+    const systemStats = jest.fn().mockResolvedValue({
+      cpu: 31,
+      cores: [30, 32],
+      memUsedMb: 900,
+      memTotalMb: 2000,
+      memPct: 45,
+      swapUsedMb: 0,
+      tempC: 41,
+      load: [0.8, 0.4, 0.2],
+      uptime: 100
+    })
+    ;(window as any).app = { systemStats }
+
+    render(<App />)
+    expect(screen.queryByTestId('projection-system-monitor')).not.toBeInTheDocument()
+
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('livi:open-system-monitor'))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(screen.getByTestId('projection-system-monitor')).toBeInTheDocument()
+    expect(systemStats).toHaveBeenCalledTimes(1)
+
+    fireEvent.pointerDown(screen.getByLabelText('Close Pi monitor'))
+    expect(screen.getByTestId('projection-system-monitor')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('Close Pi monitor'))
+    expect(screen.queryByTestId('projection-system-monitor')).not.toBeInTheDocument()
+    expect(navigateMock).not.toHaveBeenCalled()
+  })
+
   test('keeps projection and cluster routes outside the host UI frame', () => {
     mockPathname = '/'
     const { rerender } = render(<App />)

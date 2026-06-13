@@ -24,7 +24,7 @@ describe('backdrop color resolution', () => {
     expect(motoBackdropHex(config({ darkMode: false }))).toBe('#d4d4d4')
   })
 
-  test('does not use the static moto fill color when dynamic backdrop is enabled', () => {
+  test('uses the static moto fill color when backdrop is enabled', () => {
     expect(
       motoBackdropHex(
         config({
@@ -34,7 +34,7 @@ describe('backdrop color resolution', () => {
           ambientFillColor: '#2f473c'
         })
       )
-    ).toBe('#000000')
+    ).toBe('#2f473c')
   })
 
   test('uses the static moto fill color when background fill is enabled', () => {

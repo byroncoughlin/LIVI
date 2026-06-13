@@ -1,6 +1,5 @@
 import ArrowBackIosOutlinedIcon from '@mui/icons-material/ArrowBackIosOutlined'
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined'
-import DesktopWindowsOutlinedIcon from '@mui/icons-material/DesktopWindowsOutlined'
 import ExitToAppOutlinedIcon from '@mui/icons-material/ExitToAppOutlined'
 import MonitorHeartOutlinedIcon from '@mui/icons-material/MonitorHeartOutlined'
 import PowerSettingsNewOutlinedIcon from '@mui/icons-material/PowerSettingsNewOutlined'
@@ -213,6 +212,7 @@ export const SettingsLayout = ({
 
   const isSettingsRoot = location.pathname === ROUTES.SETTINGS
   const showBack = !isSettingsRoot
+  const showSectionBar = showBack || showRestart
 
   const sectionTitle = useMemo(() => {
     if (isSettingsRoot) return 'Settings'
@@ -259,26 +259,27 @@ export const SettingsLayout = ({
       }}
     >
       <Box
+        data-testid="settings-header-actions"
         sx={{
           display: 'grid',
-          gridTemplateColumns: '88px 74px minmax(0, 1fr) 74px 64px',
+          gridTemplateColumns: '74px 88px minmax(0, 1fr) 74px 64px',
           gap: '8px',
           alignItems: 'center',
           flex: '0 0 auto'
         }}
       >
         <HeaderActionButton
+          label="Reboot"
+          ariaLabel="Reboot Pi"
+          icon={<PowerSettingsNewOutlinedIcon />}
+          tone="danger"
+          onClick={() => setConfirmAction('reboot')}
+        />
+        <HeaderActionButton
           label="Desktop"
           ariaLabel="Exit to desktop"
           icon={<ExitToAppOutlinedIcon />}
-          tone="danger"
           onClick={() => setConfirmAction('desktop')}
-        />
-        <HeaderActionButton
-          label="Monitor"
-          ariaLabel="Open Pi monitor"
-          icon={<MonitorHeartOutlinedIcon />}
-          onClick={handleOpenMonitor}
         />
 
         <Box
@@ -310,10 +311,10 @@ export const SettingsLayout = ({
         </Box>
 
         <HeaderActionButton
-          label="Reboot"
-          ariaLabel="Reboot Pi"
-          icon={<PowerSettingsNewOutlinedIcon />}
-          onClick={() => setConfirmAction('reboot')}
+          label="Monitor"
+          ariaLabel="Open Pi monitor"
+          icon={<MonitorHeartOutlinedIcon />}
+          onClick={handleOpenMonitor}
         />
         <IconButton
           onClick={handleCloseSettings}
@@ -337,88 +338,82 @@ export const SettingsLayout = ({
         </IconButton>
       </Box>
 
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: '72px minmax(0, 1fr) 96px',
-          alignItems: 'center',
-          minHeight: '42px',
-          gap: '8px',
-          flex: '0 0 auto'
-        }}
-      >
-        {showBack ? (
-          <IconButton
-            onClick={handleNavigate}
-            aria-label="Back"
-            className="nav-focus-primary"
-            disableRipple
-            disableFocusRipple
-            disableTouchRipple
-            sx={{
-              width: '72px',
-              height: '42px',
-              borderRadius: '8px',
-              border: '1px solid rgba(255,255,255,0.12)',
-              color: '#d8dee9',
-              background: 'rgba(255,255,255,0.045)'
-            }}
-          >
-            <ArrowBackIosOutlinedIcon sx={{ fontSize: 22 }} />
-          </IconButton>
-        ) : (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.75,
-              color: 'rgba(255,255,255,0.34)'
-            }}
-          >
-            <DesktopWindowsOutlinedIcon sx={{ fontSize: 19 }} />
-          </Box>
-        )}
-
-        <Typography
+      {showSectionBar && (
+        <Box
+          data-testid="settings-section-bar"
           sx={{
-            minWidth: 0,
-            textAlign: 'center',
-            fontWeight: 900,
-            lineHeight: 1.05,
-            fontSize: '22px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            letterSpacing: 0
+            display: 'grid',
+            gridTemplateColumns: '72px minmax(0, 1fr) 96px',
+            alignItems: 'center',
+            minHeight: '42px',
+            gap: '8px',
+            flex: '0 0 auto'
           }}
         >
-          {sectionTitle}
-        </Typography>
+          {showBack ? (
+            <IconButton
+              onClick={handleNavigate}
+              aria-label="Back"
+              className="nav-focus-primary"
+              disableRipple
+              disableFocusRipple
+              disableTouchRipple
+              sx={{
+                width: '72px',
+                height: '42px',
+                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: '#d8dee9',
+                background: 'rgba(255,255,255,0.045)'
+              }}
+            >
+              <ArrowBackIosOutlinedIcon sx={{ fontSize: 22 }} />
+            </IconButton>
+          ) : (
+            <Box />
+          )}
 
-        {showRestart ? (
-          <Button
-            onClick={onRestart}
-            aria-label="Apply"
-            variant="outlined"
-            startIcon={<RestartAltOutlinedIcon sx={{ fontSize: 19 }} />}
+          <Typography
             sx={{
               minWidth: 0,
-              height: '42px',
-              borderRadius: '8px',
-              px: '10px',
-              color: '#7ee787',
-              borderColor: 'rgba(126,231,135,0.32)',
+              textAlign: 'center',
               fontWeight: 900,
-              fontSize: '12px',
-              lineHeight: 1
+              lineHeight: 1.05,
+              fontSize: '22px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              letterSpacing: 0
             }}
           >
-            Apply
-          </Button>
-        ) : (
-          <Box />
-        )}
-      </Box>
+            {sectionTitle}
+          </Typography>
+
+          {showRestart ? (
+            <Button
+              onClick={onRestart}
+              aria-label="Apply"
+              variant="outlined"
+              startIcon={<RestartAltOutlinedIcon sx={{ fontSize: 19 }} />}
+              sx={{
+                minWidth: 0,
+                height: '42px',
+                borderRadius: '8px',
+                px: '10px',
+                color: '#7ee787',
+                borderColor: 'rgba(126,231,135,0.32)',
+                fontWeight: 900,
+                fontSize: '12px',
+                lineHeight: 1
+              }}
+            >
+              Apply
+            </Button>
+          ) : (
+            <Box />
+          )}
+        </Box>
+      )}
 
       <Box
         sx={{

@@ -564,6 +564,13 @@ describe('Projection page', () => {
       expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent(
         'Searching for iPhone'
       )
+
+      const settingsButton = screen.getByLabelText('Open settings')
+      expect(settingsButton).toHaveStyle({ pointerEvents: 'auto' })
+
+      navigateMock.mockClear()
+      fireEvent.click(settingsButton)
+      expect(navigateMock).toHaveBeenCalledWith('/settings', { replace: true })
     } finally {
       jest.useRealTimers()
     }
@@ -645,7 +652,7 @@ describe('Projection page', () => {
     )
   })
 
-  test('lets the dynamic backdrop show outside the view area while keeping corner masks', () => {
+  test('renders backdrop as a low-cost solid fill while keeping corner masks', () => {
     render(
       <Projection
         {...baseProps({
@@ -659,7 +666,6 @@ describe('Projection page', () => {
             projectionViewAreaLeft: 118,
             projectionViewAreaRight: 118,
             backdropEnabled: true,
-            ambientFillEnabled: true,
             ambientFillColor: '#20364a',
             roundedCornerMaskEnabled: true
           }
@@ -667,9 +673,11 @@ describe('Projection page', () => {
       />
     )
 
-    expect(screen.queryByTestId('view-area-mask-top')).not.toBeInTheDocument()
+    expect(screen.getByTestId('view-area-mask-top')).toHaveStyle({
+      backgroundColor: '#20364a'
+    })
     expect(screen.getByTestId('view-area-corner-mask-top-left')).toBeInTheDocument()
-    expect(screen.getByTestId('view-area-corner-mask-top-left').style.background).not.toContain(
+    expect(screen.getByTestId('view-area-corner-mask-top-left').style.background).toContain(
       '#20364a'
     )
   })
@@ -2231,104 +2239,6 @@ describe('Projection page', () => {
     expect(setNavVideoOverlayActive).toHaveBeenCalledWith(false)
   })
 
-  test('hidden system monitor opens on two-finger hold and polls only while open', async () => {
-    jest.useFakeTimers()
-    const dispatchPointer = (
-      type: string,
-      pointerId: number,
-      target: EventTarget = window
-    ): void => {
-      const event = new Event(type, { bubbles: true, cancelable: true })
-      Object.defineProperty(event, 'pointerId', { value: pointerId })
-      target.dispatchEvent(event)
-    }
-    const systemStats = jest.fn().mockResolvedValue({
-      cpu: 42,
-      cores: [20, 40],
-      memUsedMb: 1000,
-      memTotalMb: 2000,
-      memPct: 50,
-      swapUsedMb: 0,
-      tempC: 45.7,
-      load: [1, 0.5, 0.25],
-      uptime: 1235
-    })
-    ;(window as any).app.systemStats = systemStats
-
-    render(<Projection {...baseProps()} />)
-
-    expect(screen.queryByTestId('projection-system-monitor')).not.toBeInTheDocument()
-    expect(systemStats).not.toHaveBeenCalled()
-
-    dispatchPointer('pointerdown', 1)
-    dispatchPointer('pointerdown', 2)
-    act(() => {
-      jest.advanceTimersByTime(999)
-    })
-
-    expect(screen.queryByTestId('projection-system-monitor')).not.toBeInTheDocument()
-    expect(systemStats).not.toHaveBeenCalled()
-
-    await act(async () => {
-      jest.advanceTimersByTime(1)
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
-    expect(screen.getByTestId('projection-system-monitor')).toBeInTheDocument()
-    expect(systemStats).toHaveBeenCalledTimes(1)
-    expect(screen.getByTestId('projection-system-monitor')).toHaveTextContent('42')
-
-    dispatchPointer('pointerup', 1)
-    dispatchPointer('pointerup', 2)
-
-    await act(async () => {
-      jest.advanceTimersByTime(1000)
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
-    expect(systemStats).toHaveBeenCalledTimes(2)
-
-    act(() => {
-      dispatchPointer('pointerdown', 3, screen.getByTestId('projection-system-monitor-backdrop'))
-    })
-    expect(screen.queryByTestId('projection-system-monitor')).not.toBeInTheDocument()
-
-    act(() => {
-      jest.advanceTimersByTime(3000)
-    })
-
-    expect(systemStats).toHaveBeenCalledTimes(2)
-    jest.useRealTimers()
-  })
-
-  test('hidden system monitor opens from the settings action event', async () => {
-    const systemStats = jest.fn().mockResolvedValue({
-      cpu: 31,
-      cores: [30, 32],
-      memUsedMb: 900,
-      memTotalMb: 2000,
-      memPct: 45,
-      swapUsedMb: 0,
-      tempC: 41,
-      load: [0.8, 0.4, 0.2],
-      uptime: 100
-    })
-    ;(window as any).app.systemStats = systemStats
-
-    render(<Projection {...baseProps()} />)
-    expect(screen.queryByTestId('projection-system-monitor')).not.toBeInTheDocument()
-
-    await act(async () => {
-      window.dispatchEvent(new CustomEvent('livi:open-system-monitor'))
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
-    expect(screen.getByTestId('projection-system-monitor')).toBeInTheDocument()
-    expect(systemStats).toHaveBeenCalledTimes(1)
-  })
 })
 
 function baseProps(overrides: any = {}) {

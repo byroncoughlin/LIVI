@@ -1,6 +1,5 @@
 import * as React from 'react'
 
-const HOLD_MS = 1000
 const POLL_MS = 1000
 
 const heat = (value: number, warm: number, hot: number): string =>
@@ -36,6 +35,10 @@ const statRow = (label: string, value: string, color?: string): React.ReactEleme
   </div>
 )
 
+const stopPointer = (event: React.PointerEvent): void => {
+  event.stopPropagation()
+}
+
 export function SystemMonitor(): React.ReactElement | null {
   const [open, setOpen] = React.useState(false)
   const [stats, setStats] = React.useState<SystemStats | null>(null)
@@ -50,42 +53,8 @@ export function SystemMonitor(): React.ReactElement | null {
 
     window.addEventListener('livi:open-system-monitor', onOpenMonitor)
 
-    const activePointers = new Set<number>()
-    let timer: number | null = null
-
-    const clearTimer = (): void => {
-      if (timer == null) return
-      window.clearTimeout(timer)
-      timer = null
-    }
-
-    const onPointerDown = (event: PointerEvent): void => {
-      if (typeof window.app?.systemStats !== 'function') return
-      activePointers.add(event.pointerId)
-      if (activePointers.size === 2 && !timer && !openRef.current) {
-        timer = window.setTimeout(() => {
-          if (activePointers.size >= 2) setOpen(true)
-          timer = null
-        }, HOLD_MS)
-      }
-    }
-
-    const onPointerUp = (event: PointerEvent): void => {
-      if (typeof window.app?.systemStats !== 'function') return
-      activePointers.delete(event.pointerId)
-      if (activePointers.size < 2) clearTimer()
-    }
-
-    window.addEventListener('pointerdown', onPointerDown, { passive: true })
-    window.addEventListener('pointerup', onPointerUp, { passive: true })
-    window.addEventListener('pointercancel', onPointerUp, { passive: true })
-
     return () => {
-      clearTimer()
       window.removeEventListener('livi:open-system-monitor', onOpenMonitor)
-      window.removeEventListener('pointerdown', onPointerDown)
-      window.removeEventListener('pointerup', onPointerUp)
-      window.removeEventListener('pointercancel', onPointerUp)
     }
   }, [])
 
@@ -116,11 +85,18 @@ export function SystemMonitor(): React.ReactElement | null {
   if (!open) return null
 
   const cpu = stats?.cpu ?? 0
+  const closeMonitor = (event: React.MouseEvent): void => {
+    event.preventDefault()
+    event.stopPropagation()
+    setOpen(false)
+  }
 
   return (
     <div
       data-testid="projection-system-monitor-backdrop"
-      onPointerDown={() => setOpen(false)}
+      onPointerDown={stopPointer}
+      onPointerUp={stopPointer}
+      onClick={closeMonitor}
       style={{
         position: 'fixed',
         inset: 0,
@@ -134,7 +110,9 @@ export function SystemMonitor(): React.ReactElement | null {
     >
       <div
         data-testid="projection-system-monitor"
-        onPointerDown={(event) => event.stopPropagation()}
+        onPointerDown={stopPointer}
+        onPointerUp={stopPointer}
+        onClick={(event) => event.stopPropagation()}
         style={{
           width: 'calc(min(100vw, 100vh) * 0.706)',
           height: 'calc(min(100vw, 100vh) * 0.706)',
@@ -155,10 +133,9 @@ export function SystemMonitor(): React.ReactElement | null {
           <button
             type="button"
             aria-label="Close Pi monitor"
-            onPointerDown={(event) => {
-              event.stopPropagation()
-              setOpen(false)
-            }}
+            onPointerDown={stopPointer}
+            onPointerUp={stopPointer}
+            onClick={closeMonitor}
             style={{
               background: 'none',
               border: 'none',
@@ -289,9 +266,7 @@ export function SystemMonitor(): React.ReactElement | null {
           </div>
         )}
 
-        <div style={{ color: '#5b6066', fontSize: 12, textAlign: 'center' }}>
-          tap to close / two-finger hold to reopen
-        </div>
+        <div style={{ color: '#5b6066', fontSize: 12, textAlign: 'center' }}>tap to close</div>
       </div>
     </div>
   )
