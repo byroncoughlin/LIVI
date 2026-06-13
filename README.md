@@ -1,331 +1,281 @@
 <p align="center">
-  <img alt='LIVI' src='docs/images/banner.png' width="1200" />
+  <a href="https://byronthegreat.com/projects/motocarplay/"><img alt="Live Demo" src="https://img.shields.io/badge/live%20demo-byronthegreat.com-2ea44f"></a>
+  <img alt="Platform" src="https://img.shields.io/badge/platform-Raspberry%20Pi%205-c51a4a">
+  <img alt="Display" src="https://img.shields.io/badge/display-800x800%20round-ffca28">
+  <img alt="Rendering" src="https://img.shields.io/badge/rendering-GStreamer%20%2B%20hardware%20decode-4fc3f7">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-blue">
 </p>
 
 # motoCarPlay on LIVI
 
-**A hardware-accelerated Apple CarPlay dashboard for my 1975 BMW R75/6, built on a Raspberry Pi 5 and an 800x800 round touchscreen.**
+**A hardware-accelerated Apple CarPlay dashboard with live motorcycle instrumentation, built for my 1975 BMW R75/6.**
 
-**Try the browser demo:** [byronthegreat.com/projects/motocarplay](https://byronthegreat.com/projects/motocarplay/)
+**Try the live browser demo → [byronthegreat.com/projects/motocarplay](https://byronthegreat.com/projects/motocarplay/)**
+_(the dashboard UI running in your browser, driven by a simulated ride; the center CarPlay screen is a static screenshot)_
 
-This is the current generation of my motorcycle CarPlay project. The first version lives in
-[byroncoughlin/round-carplay](https://github.com/byroncoughlin/round-carplay): it proved the
-round 3.4-inch display, the centered square CarPlay window, the motorcycle sensor ring, live
-graphs, and a blurred ambient backdrop. It worked, but the Raspberry Pi needed a more modern
-foundation than my original Electron-heavy round build.
+> **Current version:** this repo is the ride-forward motoCarPlay build.
+> The original prototype lives in
+> [byroncoughlin/round-carplay](https://github.com/byroncoughlin/round-carplay):
+> it proved the round dashboard, sensor overlays, graphing, and ambient backdrop.
+> This repo ports/rebuilds that project on
+> [LIVI](https://github.com/f-io/LIVI), giving the Pi a native GStreamer video
+> path, hardware-accelerated decode, and a compositor that is much better suited
+> to actually living on the motorcycle.
 
-So I rebuilt/ported the project onto
-[LIVI](https://github.com/f-io/LIVI), f-io's Linux in-vehicle infotainment stack. LIVI gives the
-Pi a native GStreamer video path, hardware-accelerated decode, low-latency audio, an embedded
-Linux compositor, and a much cleaner head-unit architecture. My fork keeps the motorcycle-specific
-dash and sensor work, but moves the CarPlay rendering onto the more stable Pi-native base.
+CarPlay runs in a centered square on an 800x800 round screen. The curved space
+around it becomes the instrument cluster: cylinder-head temps, lean/pitch/G,
+GPS speed and heading, ambient temperature, Pi temperature, altitude, and live
+history graphs. The optional backdrop can either sample the CarPlay frame for an
+average fill color or render a blurred, zoomed copy behind the rounded CarPlay
+window so the square feels like it belongs in the circle.
 
 <p align="center">
-  <img src="docs/images/dash.png" alt="motoCarPlay dashboard on LIVI" width="70%" />
+  <img src="docs/images/moto-dashboard.png" alt="motoCarPlay dashboard" width="48%" />
 </p>
 
-## What This Fork Adds
-
-- **Moto Display mode:** a round 800x800 dashboard for the BMW, with CarPlay centered in a clipped square and motorcycle instrumentation around the curved edges.
-- **Live sensor bridge:** GPS speed/heading/altitude, IMU lean/pitch/G-force, ambient temperature, Raspberry Pi temperature, and left/right cylinder-head temperatures.
-- **Graph overlays:** tap a metric to see live history, min/max values, and risk bands for heat-related readings.
-- **Opt-in backdrop modes:** the classic sampled-color fill and the blurred/zoomed CarPlay backdrop are both toggleable; when backdrop is off, no backdrop sampling or animation work runs.
-- **Pi-first restart behavior:** mode changes that require a relaunch now restart the app immediately and clean up old compositor/GStreamer helper processes.
-- **Hardware-accelerated Pi rendering:** the current build is designed around LIVI's native Linux/GStreamer path instead of the older software-heavy prototype approach.
-
-## Credit Where It Is Due
-
-This is Byron's motorcycle build, but it sits on a lot of generous open-source work.
-
-- **[f-io/LIVI](https://github.com/f-io/LIVI):** the modern cross-platform head-unit foundation this fork is built on.
-- **[f-io/pi-carplay](https://github.com/f-io/pi-carplay):** the earlier Raspberry Pi CarPlay work that helped make this whole family of projects possible.
-- **[OneMakerShow/round-carplay](https://github.com/OneMakerShow/round-carplay):** the round-display CarPlay idea that my first motoCarPlay fork started from.
-
-The rest of this README keeps the upstream LIVI install/build information because the platform
-details still matter for reproducing the Pi setup.
-
-## LIVI Platform
-
-LIVI is an open-source **Apple CarPlay and Android Auto head unit**.
-
-It is a standalone cross-platform Electron head unit with a native, zero-copy GStreamer video pipeline and hardware-accelerated decoding on Linux (including the Raspberry Pi 4 and 5), macOS and Windows, low-latency audio, multitouch + D-Pad navigation, and support for very small embedded/OEM displays.
-
-## Native Connectivity
-
-- **Android Auto** (wired) on all platforms
-- **Android Auto** (wireless) on Linux
-
-## Dongle-based Connectivity
-
-- **Android Auto** (wired & wireless) on all platforms
-- **Apple CarPlay** (wired & wireless) on all platforms
-
-> **Supported USB adapters (for CarPlay):** Carlinkit **CPC200-CCPA** (wireless/wired) and **CPC200-CCPW** (wired)
-
-## Project Status
-
-![Release](https://img.shields.io/github/v/release/f-io/LIVI?label=release)
-![Main Version](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/f-io/LIVI/version/.github/badges/main-version.json)
-![TS Main](https://img.shields.io/github/actions/workflow/status/f-io/LIVI/typecheck.yml?branch=main&label=TS%20main)
-![Build Main](https://img.shields.io/github/actions/workflow/status/f-io/LIVI/build.yml?branch=main&label=build%20main)
-![Coverage Main](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/f-io/LIVI/version/.github/badges/main-coverage-main.json)
-![Coverage Renderer](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/f-io/LIVI/version/.github/badges/main-coverage-renderer.json)
-
-## Installation
-
-> [!IMPORTANT]
-> LIVI requires **OpenGL ES 3.x**.
-
-## Raspberry Pi OS
-
-> [!NOTE]
-> The Pi 3 and earlier use the VideoCore IV GPU, which only supports OpenGL ES 2.0 and is therefore unsupported.
-
-```bash
-curl -fL -o install.sh https://raw.githubusercontent.com/f-io/LIVI/main/scripts/install/pi/install.sh
-chmod +x install.sh
-./install.sh
-```
-
-The `install.sh` script performs the following tasks:
-
-1. checks for required tools: curl, xdg-user-dir and pkexec
-2. downloads the latest LIVI AppImage
-3. creates an autostart entry so the application launches automatically on boot
-4. creates a desktop shortcut for easy access
-5. applies the Raspberry Pi HEVC decoder patch if the system GStreamer is affected (see note below)
-
-> [!NOTE]
-> **Raspberry Pi HEVC (1080p) hardware decode** uses the system GStreamer `v4l2codecs` plugin. GStreamer **1.26.x before 1.26.11** (currently shipped by Raspberry Pi OS) has a SAND-crop bug that breaks zero-copy at 1080p and leaves the main video layer black. The installer detects an affected version and rebuilds the patched plugin from the distribution source automatically. If you do not use the installer, apply it manually from a LIVI checkout on the Pi:
->
-> ```bash
-> bash scripts/gstreamer/patch-pi-v4l2codecs.sh
-> ```
-
-On first launch, LIVI detects if the udev rule for USB access is missing and prompts you to install it. The rule grants USB access to connected Android phones (for wired Android Auto) and to the USB dongle.
-
-_This install script is not actively tested on other Linux distributions._
-
-## Linux (x86_64)
-
-This AppImage has been tested on Debian Trixie (13) with Wayland, Ubuntu 26.04 and Fedora 44 (GMNOME).
-
-```bash
-chmod +x LIVI-*-x86_64.AppImage
-```
-
-On first launch, LIVI detects if the udev rule for USB access is missing and prompts you to install it. The rule grants USB access to connected Android phones (for wired Android Auto) and to the USB dongle.
-
-> **Hardware video decode (optional):** LIVI uses the system VA-API driver for GPU video decode (it is not bundled, since it must match your GPU and kernel). Most desktops ship it, a minimal install may not. Without it LIVI still works via software decode. For HW decode install the driver for your GPU and verify with `vainfo`: `i965-va-driver` (older Intel, e.g. Broadwell), `intel-media-va-driver` (Gen9+ Intel), `mesa-va-drivers` (AMD).
-
-> **Ubuntu / Kubuntu users:** On Ubuntu 24.04 AppArmor blocks the Chromium sandbox for AppImages, start it with `--no-sandbox` as a workaround. Ubuntu 24.10 and newer run the AppImage out of the box.
-
-## Mac (arm64)
-
-Download the `-arm64.dmg`, open it, and drag **LIVI.app** into Applications.
-
-When launching the app for the first time, macOS may block it.
-In that case:
-
-1. Try to open the app once (it will be blocked)
-2. Go to **System Settings → Privacy & Security**
-3. Scroll down and click **“Open Anyway”**
-4. Confirm the dialog
-
-After this, the app will launch normally and future updates will work without additional steps.
-
-
-## Windows (x64)
-
-> [!NOTE]
-> The Windows build is provided on a **best-effort basis**. Windows is **not a primary target platform** of this project and receives limited testing.
-> It is mainly intended for development, experimentation, and desktop testing.
-
-### USB Driver Requirement
-
-The Carlinkit dongle requires a compatible **WinUSB (winusb.sys)** driver on Windows.
-You can install it using a tool such as **Zadig** (libwdi): https://github.com/pbatard/libwdi/releases
-
-Steps:
-
-1. Plug in the Carlinkit dongle
-2. Start Zadig
-3. Select the dongle from the device list
-4. Install the **WinUSB (winusb.sys)** driver
-
-## Build Environment
-
-![Node](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/f-io/LIVI/version/.github/badges/main-node.json)
-![pnpm](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/f-io/LIVI/version/.github/badges/main-pnpm.json)
-![electron](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/f-io/LIVI/version/.github/badges/main-electron.json)
-![chrome](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/f-io/LIVI/version/.github/badges/main-electron-date.json)
-![release](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/f-io/LIVI/version/.github/badges/main-electron-chromium.json)
-![gstreamer](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/f-io/LIVI/version/.github/badges/main-gstreamer.json)
-
-### System Requirements (build)
-
-Make sure the following packages and tools are installed on your system before building:
-
-- **Node.js 24.x** (with `corepack` for `pnpm`)
-- **Python 3.x** (for native module builds via `node-gyp`)
-- **build-essential** (Linux: includes `gcc`, `g++`, `make`, etc.)
-- **libusb-1.0-0-dev** (required for `node-usb`)
-- **libudev-dev** (optional but recommended for USB detection on Linux)
-- **libgstreamer1.0-dev** + **libgstreamer-plugins-base1.0-dev** (required to build the `gst-video` addon)
-- **meson** (≥ 1.4), **ninja**, **pkg-config**, **bison**, **cmake** and the wlroots/EGL stack: **libwayland-dev**, **wayland-protocols**, **libxkbcommon-dev** (≥ 1.8.0), **libpixman-1-dev**, **libcairo2-dev**, **libegl-dev** / **libgles-dev** / **libgbm-dev** / **libffi-dev** / **libexpat1-dev** (Linux only: to build the embedded wlroots compositor)
-- **fuse** (required to run AppImages)
-
-On Debian/Ubuntu/Raspberry Pi OS, install everything with:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y git build-essential python3 python3-dev python3-pip \
-  pkg-config bison ninja-build cmake \
-  libusb-1.0-0-dev libudev-dev \
-  libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
-  libegl-dev libgles-dev libgbm-dev libffi-dev libexpat1-dev \
-  libwayland-dev wayland-protocols libxkbcommon-dev libpixman-1-dev libcairo2-dev
-pip3 install --user --break-system-packages 'meson>=1.4'
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt-get install -y nodejs
-sudo corepack enable
-```
-
-On Fedora, install everything with:
-
-```bash
-sudo dnf install -y git gcc gcc-c++ make python3 python3-devel \
-  pkgconf-pkg-config libusb1-devel systemd-devel \
-  gstreamer1-devel gstreamer1-plugins-base-devel \
-  meson ninja-build bison cmake \
-  wlroots-devel wayland-devel wayland-protocols-devel libxkbcommon-devel \
-  pixman-devel cairo-devel \
-  mesa-libEGL-devel mesa-libGLES-devel mesa-libgbm-devel libffi-devel expat-devel \
-  fuse fuse-libs
-curl -fsSL https://rpm.nodesource.com/setup_24.x | sudo bash -
-sudo dnf install -y nodejs
-sudo corepack enable
-```
-
-
-On macOS, the `gst-video` addon links against the **GStreamer.framework**. Install
-both the runtime and development packages (matching versions) from
-[gstreamer.freedesktop.org](https://gstreamer.freedesktop.org/download/#macos)
-before building. `node-gyp` discovers it via `pkg-config` under
-`/Library/Frameworks/GStreamer.framework`.
-
-### Clone & Build
-
-```bash
-# Git clone
-git clone --branch main --single-branch https://github.com/f-io/LIVI.git \
-  && cd LIVI
-
-# Install dependencies from lockfile
-pnpm run install:ci
-
-# --- Build targets ---
-
-# Linux x86_64 (AppImage + deb)
-pnpm run build:linux
-
-# Linux ARM64 (AppImage + deb)
-pnpm run build:armLinux
-
-# Single-format variants
-pnpm run build:linux:appimage      # x86_64 AppImage
-pnpm run build:linux:deb           # x86_64 deb
-pnpm run build:armLinux:appimage   # ARM64 AppImage
-pnpm run build:armLinux:deb        # ARM64 deb
-
-# macOS (arm64 dmg)
-pnpm run build:mac
-```
-
-## Dashboard
-
-The Dashboard is currently in an early stage. While the IPC/socket telemetry payload already supports many signals, the UI exposes only a small subset. Widgets and layouts will be extended over time.
-
-### Telemetry CLI (local)
-
-To push test data into a running LIVI, use the CLI in `scripts/tools`. The full
-field list and routing (Dash / AA / Dongle) lives in
-`src/main/shared/types/Telemetry.ts`.
-
-```bash
-pnpm -C scripts/tools install
-
-# Realistic all-fields demo push
-pnpm -C scripts/tools run telemetry:demo
-
-# Send single fields or blocks ad-hoc
-pnpm -C scripts/tools run telemetry:set fuelPct=4 rangeKm=38
-pnpm -C scripts/tools run telemetry:set gps.lat=53.5912 gps.lng=10.015
-pnpm -C scripts/tools run telemetry:set _repeatMs=1000 speedKph=90 rpm=2500
-```
+> **This is a personal build.** It stands on a lot of open-source work:
+> [f-io/LIVI](https://github.com/f-io/LIVI) for the modern head-unit foundation,
+> [f-io/pi-carplay](https://github.com/f-io/pi-carplay) for earlier Raspberry Pi
+> CarPlay work, and
+> [OneMakerShow/round-carplay](https://github.com/OneMakerShow/round-carplay)
+> for the round-display CarPlay idea that my first motoCarPlay fork started from.
+> Full credit stays visible because the project only exists thanks to those
+> foundations.
+
+---
+
+## What it does
+
+### CarPlay, centered in the circle
+
+Wireless CarPlay (via a Carlinkit adapter) renders in a clipped, rounded square
+inside the 800x800 round panel. The four curved segments around it are the
+motorcycle dashboard:
+
+| Arc | Shows |
+|---|---|
+| **Top** | Compass heading, GPS speed, ambient temperature |
+| **Bottom** | Altitude, lean-angle inclinometer, pitch, G-force |
+| **Left / Right** | Cylinder-head temperature, one bar gauge per jug, color-coded by heat |
+
+The prototype proved that layout in Electron. The LIVI rebuild keeps the same
+round motorcycle idea, but moves the projection path into a native Linux video
+pipeline with the CarPlay stream decoded and composed by GStreamer.
+
+### Optional ambient backdrop
+
+Black around the CarPlay square looked too much like a screen dropped into a
+hole. MotoCarPlay has two backdrop modes:
+
+| Mode | What it does |
+|---|---|
+| **Average Color** | Downscales the live CarPlay frame to a small grid, averages the whole crop, and paints the round edges with that sampled color. |
+| **Blur Glow** | Crops, shrinks, blurs, and scales the live CarPlay frame behind the foreground window so the bezel picks up the same color and motion. |
+
+Backdrop is a real toggle. When it is off, the app uses the normal projection
+pipeline and does not spend work sampling, blurring, or animating the background.
+When Blur Glow is on, the blur branch stays tiny and temporally blends each
+sampled frame so colorful screens ease instead of jumping.
+
+### Live graphing with risk zones
+
+Tap any metric to open a full-screen graph over the CarPlay card: a big live
+number, rolling min/max values, reset controls, and a scrollable history. Graphs
+that matter for engine or board health get color risk bands painted under the
+trace:
+
+| Metric | Bands |
+|---|---|
+| **Cylinder-head temp** | cold (blue) → normal (green) → warm (amber) → hot (red) |
+| **Pi CPU temp** | healthy (green) → warm (amber) → throttle (red) |
+
+Tap the ambient reading and the screen splits into a dual graph: outside air on
+top, Pi CPU temperature below. The Pi lives in a small enclosure, so thermal
+headroom matters.
 
 <p align="center">
-  <img src="docs/images/dash.png" alt="Dashboard" width="70%" />
-</p>
-
-## View and Safe Area
-
-Stream resolution, view area insets, and safe area can be configured independently for the main and cluster streams. This is supported for Android Auto as well as CarPlay.
-
-### Main Stream
-Video: 1280x720 - View Area: 0/0/100/0 (T/B/L/R) - Safe Area: 100/100/100/100 (T/B/L/R) - Draw Outside: true
-<p align="center">
-  <img src="docs/images/area/main_safe_area_view_area_aa.png" alt="Safe area main stream Android Auto" width="70%" />
-</p>
-
-### Cluster Stream
-Video: 1280x720 - View Area: 0/0/0/0 (T/B/L/R) - Safe Area: 60/20/350/350 (T/B/L/R)
-<p align="center">
-  <img src="docs/images/area/dash_safe_area_aa.png" alt="Safe area cluster stream Android Auto" width="70%" />
-</p>
-
-
-
-## Multi-Display
-
-LIVI can run as multiple windows at once, each placeable on its own physical display.
-The Dash and Aux windows are freely assignable and can show the Dashes, the reverse camera or the media player. Assignment is not exclusive: any feature can be shown on one, several, or all windows at the same time.
-
-Configure each window under Settings → Window Settings
-(Main Screen / Dash Screen / Aux Screen), and assign features under
-Settings → General → Tab Settings.
-
-<p align="center">
-  <img src="docs/images/multi-display/dash.png" alt="Dash Screen" width="70%" />
-</p>
-
-<p align="center">
-  <img src="docs/images/multi-display/auxilary.png" alt="Aux Screen" width="34%" align="top" />
-  <img src="docs/images/multi-display/livi.png" alt="Main Screen" width="34%" align="top" />
-</p>
-
-## Images
-
-<p align="center">
-  <img src="docs/images/carplay.png" alt="CarPlay" width="42%" align="center" />
+  <img src="docs/images/moto-graph-split.png" alt="Ambient + Pi CPU split graph" width="32%" />
   &emsp;
-  <img src="docs/images/aa.png" alt="Android Auto" width="42%" align="center" />
+  <img src="docs/images/moto-graph-cht.png" alt="Cylinder-head temp graph with risk band" width="32%" />
 </p>
 
-<p align="center">
-  <img src="docs/images/media.png" alt="Media" width="42%" align="top" />
-  &emsp;
-  <img src="docs/images/settings.png" alt="Settings" width="42%" align="top" />
-</p>
+### Why LIVI
+
+The first motoCarPlay repo proved the dashboard. LIVI made it feel like a
+platform:
+
+- native GStreamer projection instead of a software-heavy browser video path
+- hardware decode on Raspberry Pi 5
+- a compositor that can keep the video plane under transparent UI
+- faster clean restarts after mode changes
+- a better base for Carlinkit, CarPlay, Android Auto, audio, and future head-unit work
+
+In plain terms: the old repo is the prototype; this repo is the version I want
+to keep riding forward.
+
+---
+
+## Parts list
+
+Everything connects to the Pi's GPIO or USB. Prices are what I actually paid
+for the original motoCarPlay build (USD); yours will vary.
+
+### Compute & display
+
+| Part | What I used | Qty | Price |
+|---|---|--:|--:|
+| Pi 5 (2GB) + active cooler + case | iRasptek Basic Kit for Raspberry Pi 5 (2GB) | 1 | $110.99 |
+| microSD card | SanDisk Extreme PRO 32GB (A1 / U3 / V30) | 1 | $31.99 |
+| Round touchscreen | Waveshare 3.4" HDMI Round, 800x800 IPS, 10-pt touch | 1 | $105.99 |
+| Enclosure | 3D-printed Pi case + display back (own filament) | 1 | DIY |
+
+### CarPlay
+
+| Part | What I used | Qty | Price |
+|---|---|--:|--:|
+| Wireless CarPlay adapter | Carlinkit **CPC200-CCPA** | 1 | $55.99 |
+
+### Sensors
+
+| Part | What I used | Qty | Price |
+|---|---|--:|--:|
+| GPS receiver | Adafruit Ultimate GPS GNSS w/ USB (99-ch, 10 Hz) | 1 | $29.95 |
+| GPS antenna | Adafruit External Active Antenna, 28 dB, 5 m, SMA | 1 | $21.50 |
+| Antenna pigtail | u.FL → SMA RG178 jumper (5-pack, used 1) | 1 | $6.99 |
+| GPS backup cell | CR1220 coin cell (GPS module almanac, faster warm fix) | 1 | $2.49 |
+| IMU (lean / pitch / G) | Adafruit **BNO055** 9-DOF (UART mode) | 1 | $39.10 |
+| Ambient temp | BOJACK **DS18B20** waterproof probe kit (incl. pull-up) | 1 | $8.99 |
+| CHT amplifier | Adafruit **MAX31856** universal thermocouple board | 2 | $35.00 |
+| CHT thermocouple | K-type probe w/ **14 mm** spark-plug washer, 3 m lead | 2 | $31.98 |
+
+### Real-time clock
+
+| Part | What I used | Qty | Price |
+|---|---|--:|--:|
+| RTC battery | ML2032 rechargeable Li coin cell | 1 | $8.99 |
+| RTC holder | RTC battery box for Pi 5 (cell not included) | 1 | $5.49 |
+
+### Cabling & adapters
+
+| Part | What I used | Qty | Price |
+|---|---|--:|--:|
+| Jumper wires | 120-pc Dupont kit (M-F / M-M / F-F) | 1 | $8.99 |
+| HDMI cable | Cable Matters ultra-thin HDMI, 6 ft (2-pack, used 1) | 1 | $15.99 |
+| HDMI right-angle | 180° HDMI M-F U-shaped adapter (2-pack, used 1) | 1 | $10.99 |
+| Micro-HDMI adapter | Micro-HDMI M → HDMI F 180° angled (2-pack, used 1) | 1 | $9.99 |
+| USB-C → USB-A cable | Amazon Basics, 6 ft | 1 | $2.82 |
+
+**Parts subtotal: ≈ $544** (+ $13.84 Adafruit shipping & tax on the GPS order).
+Excludes the 3D-printed enclosure and the iPhone you already own.
+
+> **Why these specific parts:**
+> - The R75/6 takes **14 mm** spark plugs, so the thermocouple washers are 14 mm.
+> - The **BNO055 runs over UART, not I2C**. I had trouble with it on I2C.
+> - The Waveshare panel is **HDMI**, so the Pi 5's micro-HDMI is adapted to it.
+
+---
+
+## Instrument wiring & Pi setup
+
+The R75/6 has no OBD port and no CAN bus, so the bike learns to speak through
+discrete sensors wired to the Pi. The original prototype repo still has the
+fresh-flash wiring/setup notes:
+
+- [PI setup notes](https://github.com/byroncoughlin/round-carplay/blob/main/PI_SETUP.md)
+- [Full wiring map](https://github.com/byroncoughlin/round-carplay/blob/main/WIRING.md)
+
+Quick map:
+
+| Sensor | Bus |
+|---|---|
+| BNO055 IMU (lean/pitch/G) | UART |
+| CHT left/right (MAX31856 x2) | SPI |
+| Ambient (DS18B20) | 1-Wire |
+| GPS (Adafruit Ultimate, USB) | USB serial |
+| Pi CPU temp | `/sys/class/thermal` |
+
+LIVI handles the projection/video/compositor side. The motorcycle sensors feed
+the round overlay layer and graph history.
+
+---
+
+## Build & deploy
+
+### Build host prerequisites
+
+- Node.js 24+ with `corepack` / `pnpm`
+- Python 3.x
+- GStreamer development headers
+- `libusb-1.0-0-dev`, `libudev-dev`
+- Linux compositor dependencies used by `scripts/compositor/build-linux.sh`
+
+On the Pi build host I use the repo's `pnpm` workflow:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm run build:armLinux:appimage
+```
+
+That produces an ARM64 AppImage under `dist/`.
+
+### Deploy to the Pi
+
+```bash
+rsync -az --progress dist/LIVI-*-arm64.AppImage \
+  byron@motocarplay.local:/home/byron/LIVI/LIVI.AppImage
+
+ssh byron@motocarplay.local "chmod +x /home/byron/LIVI/LIVI.AppImage && sudo reboot"
+```
+
+The Pi autostarts `/home/byron/LIVI/LIVI.AppImage` on boot.
+
+---
+
+## Settings reference
+
+The motorcycle build keeps settings intentionally small.
+
+### System
+
+| Setting | Typical | What it does |
+|---|---|---|
+| **Wi-Fi Frequency** | 5 GHz | Wireless CarPlay adapter band. |
+| **Auto Connect** | On | Bring the dongle/phone session up automatically. |
+| **Preferred Connection** | Dongle | Use the Carlinkit path for CarPlay. |
+| **FPS** | 45 | Projection frame rate requested from the phone. |
+| **DPI** | 140 | CarPlay UI scaling hint. |
+| **View Area** | 118 px on all sides | Crops the phone stream into the square inside the round panel. |
+
+### Moto Display
+
+| Control | What it does |
+|---|---|
+| **Backdrop** | Enables/disables optional CarPlay-derived background rendering. |
+| **Backdrop Style** | Average Color or Blur Glow. Changing this requires a clean app restart. |
+| **Ambient Fill** | Uses a fixed fill color when dynamic backdrop is off. |
+| **Fill Color** | Manual round-edge fill color. |
+| **Round Corners** | Clips the CarPlay window corners so it looks native inside the dashboard. |
+| **Tilt Calibration** | Zeros lean/pitch with the bike sitting level. |
+| **Graph History** | Clears stored graph traces. |
+
+---
 
 ## Credits
 
-See [CREDITS](CREDITS.md) for acknowledgements and prior art.
+- Current foundation: [f-io/LIVI](https://github.com/f-io/LIVI)
+- Raspberry Pi CarPlay lineage: [f-io/pi-carplay](https://github.com/f-io/pi-carplay)
+- Original round-display idea: [OneMakerShow/round-carplay](https://github.com/OneMakerShow/round-carplay)
+- First motoCarPlay prototype: [byroncoughlin/round-carplay](https://github.com/byroncoughlin/round-carplay)
+
+See [`CREDITS.md`](CREDITS.md) for a longer list of prior art and third-party components.
 
 ## Disclaimer
 
-_Apple and CarPlay are trademarks of Apple Inc. Android and Android Auto are trademarks of Google LLC. This project is not affiliated with or endorsed by Apple or Google. All product names, logos, and brands are the property of their respective owners._
+_Apple and CarPlay are trademarks of Apple Inc. This project is not affiliated
+with or endorsed by Apple. All trademarks are the property of their respective
+owners. Mounting a screen on a motorcycle and reading it while riding is done at
+your own risk. Keep your eyes on the road._
 
 ## License
 
-This project is licensed under the MIT License.
+MIT. See [`LICENSE`](LICENSE).
