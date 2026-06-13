@@ -139,8 +139,10 @@ function WaitingProjectionPane({
           phone: 'Searching for iPhone',
           phoneActive: true
         }
-  const pill = (label: string, active: boolean, tone: string) => (
+  const pill = (label: string, active: boolean, tone: string, testId: string) => (
     <div
+      data-testid={testId}
+      data-tone={tone}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -160,6 +162,7 @@ function WaitingProjectionPane({
       }}
     >
       <span
+        data-testid={`${testId}-dot`}
         style={{
           width: 8,
           height: 8,
@@ -262,8 +265,18 @@ function WaitingProjectionPane({
             maxWidth: '100%'
           }}
         >
-          {pill(status.adapter, adapterFound, status.adapterTone)}
-          {pill(status.phone, status.phoneActive, status.phoneTone)}
+          {pill(
+            status.adapter,
+            adapterFound,
+            status.adapterTone,
+            'projection-waiting-adapter-pill'
+          )}
+          {pill(
+            status.phone,
+            status.phoneActive,
+            status.phoneTone,
+            'projection-waiting-phone-pill'
+          )}
         </div>
         <div
           style={{

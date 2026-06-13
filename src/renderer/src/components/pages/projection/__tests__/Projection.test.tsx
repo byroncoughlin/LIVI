@@ -686,6 +686,14 @@ describe('Projection page', () => {
     expect(screen.getByTestId('projection-waiting-pane')).toBeInTheDocument()
     expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent('Adapter found')
     expect(screen.getByTestId('projection-waiting-status-pills')).toHaveTextContent('iPhone linked')
+    expect(screen.getByTestId('projection-waiting-adapter-pill')).toHaveAttribute(
+      'data-tone',
+      '#66bb6a'
+    )
+    expect(screen.getByTestId('projection-waiting-phone-pill')).toHaveAttribute(
+      'data-tone',
+      '#66bb6a'
+    )
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
