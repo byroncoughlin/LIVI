@@ -220,9 +220,11 @@ describe('Projection page', () => {
     })
 
     expect(screen.getByLabelText('L cylinder head temperature')).toHaveTextContent('151')
-    expect(screen.getByLabelText('L cylinder head temperature')).toHaveTextContent('\u00b0C')
+    expect(screen.getByLabelText('L cylinder head temperature')).toHaveTextContent('C')
+    expect(screen.getByLabelText('L cylinder head temperature')).not.toHaveTextContent('\u00b0C')
     expect(screen.getByLabelText('R cylinder head temperature')).toHaveTextContent('163')
-    expect(screen.getByLabelText('R cylinder head temperature')).toHaveTextContent('\u00b0C')
+    expect(screen.getByLabelText('R cylinder head temperature')).toHaveTextContent('C')
+    expect(screen.getByLabelText('R cylinder head temperature')).not.toHaveTextContent('\u00b0C')
 
     nowSpy.mockReturnValue(2000)
     act(() => {
