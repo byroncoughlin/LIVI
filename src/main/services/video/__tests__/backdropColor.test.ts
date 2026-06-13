@@ -1,4 +1,4 @@
-import { backdropHex, motoBackdropHex, type BackdropColorConfig } from '../backdropColor'
+import { type BackdropColorConfig, backdropHex, motoBackdropHex } from '../backdropColor'
 
 function config(overrides: Partial<BackdropColorConfig> = {}): BackdropColorConfig {
   return {
@@ -29,6 +29,7 @@ describe('backdrop color resolution', () => {
       motoBackdropHex(
         config({
           backdropEnabled: true,
+          ambientFillEnabled: true,
           backgroundColorDark: '#000000',
           ambientFillColor: '#2f473c'
         })

@@ -657,6 +657,8 @@ describe('Projection page', () => {
             projectionViewAreaLeft: 118,
             projectionViewAreaRight: 118,
             backdropEnabled: true,
+            ambientFillEnabled: true,
+            ambientFillColor: '#20364a',
             roundedCornerMaskEnabled: true
           }
         })}
@@ -665,6 +667,9 @@ describe('Projection page', () => {
 
     expect(screen.queryByTestId('view-area-mask-top')).not.toBeInTheDocument()
     expect(screen.getByTestId('view-area-corner-mask-top-left')).toBeInTheDocument()
+    expect(screen.getByTestId('view-area-corner-mask-top-left').style.background).not.toContain(
+      '#20364a'
+    )
   })
 
   test('hides waiting pane when video frames are present', () => {
