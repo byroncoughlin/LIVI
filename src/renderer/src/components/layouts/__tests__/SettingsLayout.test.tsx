@@ -138,6 +138,24 @@ describe('SettingsLayout', () => {
     }
   })
 
+  test('keeps the settings clock separator visible on odd seconds', () => {
+    jest.useFakeTimers()
+    jest.setSystemTime(new Date('2026-06-12T21:03:01'))
+    mockPathname = '/settings'
+
+    try {
+      render(
+        <SettingsLayout title="Settings" showRestart={false}>
+          <div>Body</div>
+        </SettingsLayout>
+      )
+
+      expect(screen.getByTestId('settings-clock')).toHaveTextContent('9:03')
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
   test('opens the Pi monitor via a window event', () => {
     const listener = jest.fn()
     window.addEventListener('livi:open-system-monitor', listener)

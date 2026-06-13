@@ -21,8 +21,7 @@ type ConfirmAction = 'desktop' | 'reboot'
 const formatClock12 = (date: Date): string => {
   const hours = date.getHours() % 12 || 12
   const minutes = String(date.getMinutes()).padStart(2, '0')
-  const divider = date.getSeconds() % 2 === 0 ? ':' : ' '
-  return `${hours}${divider}${minutes}`
+  return `${hours}:${minutes}`
 }
 
 const useSettingsClock = (): string => {
