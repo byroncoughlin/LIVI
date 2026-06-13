@@ -10,6 +10,16 @@ experiments, and community efforts in the CarPlay / Carlinkit ecosystem.
 The following projects were valuable references, inspiration, or learning resources
 during development.
 
+## MotoCarPlay Lineage
+
+- **f-io/LIVI** by f-io — the modern head-unit platform this fork is built on.
+- **f-io/pi-carplay** by f-io — early Raspberry Pi CarPlay work and prior art.
+- **OneMakerShow/round-carplay** by OneMakerShow — round-display CarPlay work that
+  Byron's original motoCarPlay prototype was hard-forked from.
+- **byroncoughlin/round-carplay** by Byron Coughlin — the first motoCarPlay
+  implementation for the BMW R75/6, using discrete motorcycle sensors instead of
+  OBD/CAN data.
+
 ## Inspiration & Prior Art
 
 - **lvalen91/CPC200-CCPA-Firmware-Dump** by Tachi91

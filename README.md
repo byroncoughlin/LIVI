@@ -2,7 +2,49 @@
   <img alt='LIVI' src='docs/images/banner.png' width="1200" />
 </p>
 
-# LIVI – Linux In-Vehicle Infotainment
+# motoCarPlay on LIVI
+
+**A hardware-accelerated Apple CarPlay dashboard for my 1975 BMW R75/6, built on a Raspberry Pi 5 and an 800x800 round touchscreen.**
+
+**Try the browser demo:** [byronthegreat.com/projects/motocarplay](https://byronthegreat.com/projects/motocarplay/)
+
+This is the current generation of my motorcycle CarPlay project. The first version lives in
+[byroncoughlin/round-carplay](https://github.com/byroncoughlin/round-carplay): it proved the
+round 3.4-inch display, the centered square CarPlay window, the motorcycle sensor ring, live
+graphs, and a blurred ambient backdrop. It worked, but the Raspberry Pi needed a more modern
+foundation than my original Electron-heavy round build.
+
+So I rebuilt/ported the project onto
+[LIVI](https://github.com/f-io/LIVI), f-io's Linux in-vehicle infotainment stack. LIVI gives the
+Pi a native GStreamer video path, hardware-accelerated decode, low-latency audio, an embedded
+Linux compositor, and a much cleaner head-unit architecture. My fork keeps the motorcycle-specific
+dash and sensor work, but moves the CarPlay rendering onto the more stable Pi-native base.
+
+<p align="center">
+  <img src="docs/images/dash.png" alt="motoCarPlay dashboard on LIVI" width="70%" />
+</p>
+
+## What This Fork Adds
+
+- **Moto Display mode:** a round 800x800 dashboard for the BMW, with CarPlay centered in a clipped square and motorcycle instrumentation around the curved edges.
+- **Live sensor bridge:** GPS speed/heading/altitude, IMU lean/pitch/G-force, ambient temperature, Raspberry Pi temperature, and left/right cylinder-head temperatures.
+- **Graph overlays:** tap a metric to see live history, min/max values, and risk bands for heat-related readings.
+- **Opt-in backdrop modes:** the classic sampled-color fill and the blurred/zoomed CarPlay backdrop are both toggleable; when backdrop is off, no backdrop sampling or animation work runs.
+- **Pi-first restart behavior:** mode changes that require a relaunch now restart the app immediately and clean up old compositor/GStreamer helper processes.
+- **Hardware-accelerated Pi rendering:** the current build is designed around LIVI's native Linux/GStreamer path instead of the older software-heavy prototype approach.
+
+## Credit Where It Is Due
+
+This is Byron's motorcycle build, but it sits on a lot of generous open-source work.
+
+- **[f-io/LIVI](https://github.com/f-io/LIVI):** the modern cross-platform head-unit foundation this fork is built on.
+- **[f-io/pi-carplay](https://github.com/f-io/pi-carplay):** the earlier Raspberry Pi CarPlay work that helped make this whole family of projects possible.
+- **[OneMakerShow/round-carplay](https://github.com/OneMakerShow/round-carplay):** the round-display CarPlay idea that my first motoCarPlay fork started from.
+
+The rest of this README keeps the upstream LIVI install/build information because the platform
+details still matter for reproducing the Pi setup.
+
+## LIVI Platform
 
 LIVI is an open-source **Apple CarPlay and Android Auto head unit**.
 
