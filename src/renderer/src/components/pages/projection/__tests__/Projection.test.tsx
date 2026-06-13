@@ -487,7 +487,7 @@ describe('Projection page', () => {
     expect(graph).toHaveTextContent('AMBIENT')
     expect(graph).toHaveTextContent('PI CPU')
     expect(graph).toHaveTextContent('NO DATA IN WINDOW')
-    expect(graph).not.toHaveTextContent('72')
+    expect(graphScope.queryAllByText('72')).toHaveLength(0)
     expect(graph).toHaveTextContent('50')
   })
 

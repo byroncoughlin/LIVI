@@ -484,7 +484,6 @@ static std::string dynamic_backdrop_pipeline_desc(const std::string& codec, cons
     " ! queue max-size-buffers=1 max-size-bytes=0 max-size-time=0 leaky=downstream"
     " ! " + sink_chain() +
     " t. ! queue max-size-buffers=1 max-size-bytes=0 max-size-time=0 leaky=downstream"
-    " ! videorate drop-only=true max-rate=5"
     " ! videoscale method=0 ! video/x-raw,width=" + std::to_string(blur_w) +
     ",height=" + std::to_string(blur_h) +
     " ! videoconvert ! video/x-raw,format=AYUV"
