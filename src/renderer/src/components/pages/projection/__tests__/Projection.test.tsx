@@ -287,14 +287,14 @@ describe('Projection page', () => {
 
     const graph = screen.getByTestId('projection-metric-graph')
     expect(graph).toHaveStyle({
-      top: 'calc(14.625% - 4px)',
-      left: 'calc(14.625% - 4px)',
-      width: 'calc(70.625% + 8px)',
-      height: 'calc(70.625% + 8px)',
-      borderRadius: '42px',
-      boxShadow: '0 0 0 3px #000',
+      top: '14.625%',
+      left: '14.625%',
+      width: '70.625%',
+      height: '70.625%',
+      borderRadius: '38px',
       overflow: 'hidden'
     })
+    expect(graph.style.boxShadow).toBe('')
 
     const close = screen.getByLabelText('Close graph')
     expect(close).toHaveTextContent('\u2715')

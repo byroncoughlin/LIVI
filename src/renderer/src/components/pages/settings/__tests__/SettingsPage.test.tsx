@@ -259,5 +259,6 @@ describe('SettingsPage', () => {
 
     fireEvent.click(screen.getByText('Save & Restart'))
     expect(confirmPendingAppRestartChange).toHaveBeenCalledTimes(1)
+    expect(navigateMock).toHaveBeenCalledWith('/', { replace: true })
   })
 })

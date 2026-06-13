@@ -5,6 +5,7 @@ import { useLiviStore, useStatusStore } from '@store/store'
 import type { Key } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
+import { ROUTES } from '../../../constants'
 import { settingsSchema } from '../../../routes/schemas/schema'
 import { SettingsLayout } from '../../layouts'
 import { KeyBindingRow, StackItem } from './components'
@@ -136,7 +137,9 @@ export function SettingsPage() {
       kind={pendingAppRestartChange.kind}
       onCancel={cancelPendingAppRestartChange}
       onConfirm={() => {
-        void confirmPendingAppRestartChange()
+        const restartPromise = confirmPendingAppRestartChange()
+        navigate(ROUTES.HOME, { replace: true })
+        void restartPromise
       }}
     />
   ) : null
