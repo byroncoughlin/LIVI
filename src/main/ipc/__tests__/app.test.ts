@@ -1,6 +1,7 @@
 import { registerAppIpc } from '@main/ipc/app'
 import { registerIpcHandle, registerIpcOn } from '@main/ipc/register'
 import { readSystemStats } from '@main/services/systemStats'
+import { compositorRestart } from '@main/services/video/GstVideo'
 import { isMacPlatform } from '@main/utils'
 import { broadcastToRenderers } from '@main/window/broadcast'
 import { getMainWindow } from '@main/window/createWindow'
@@ -33,6 +34,10 @@ jest.mock('@main/services/systemStats', () => ({
   readSystemStats: jest.fn()
 }))
 
+jest.mock('@main/services/video/GstVideo', () => ({
+  compositorRestart: jest.fn(() => false)
+}))
+
 jest.mock('child_process', () => ({
   spawn: jest.fn()
 }))
@@ -42,6 +47,7 @@ const mockedIsMacPlatform = isMacPlatform as jest.Mock
 const mockedRegisterIpcHandle = registerIpcHandle as jest.Mock
 const mockedRegisterIpcOn = registerIpcOn as jest.Mock
 const mockedReadSystemStats = readSystemStats as jest.Mock
+const mockedCompositorRestart = compositorRestart as jest.Mock
 const mockedSpawn = spawn as jest.Mock
 const mockedBroadcastToRenderers = broadcastToRenderers as jest.Mock
 
@@ -58,6 +64,7 @@ describe('registerAppIpc', () => {
     Object.defineProperty(process, 'platform', { value: originalPlatform })
     mockedGetMainWindow.mockReturnValue(null)
     mockedIsMacPlatform.mockReturnValue(false)
+    mockedCompositorRestart.mockReturnValue(false)
 
     process.env.APPIMAGE = originalAppImage
     process.env.APPDIR = originalAppDir
@@ -282,7 +289,7 @@ describe('registerAppIpc', () => {
     expect(restoreKioskAfterWmExit).toHaveBeenCalledWith(runtimeState)
   })
 
-  test('app:restartApp shuts down usb service, relaunches and quits', async () => {
+  test('app:restartApp shuts down usb intake, relaunches and quits', async () => {
     jest.spyOn(global, 'setTimeout').mockImplementation(((fn: TimerHandler) => {
       if (typeof fn === 'function') fn()
       return 0 as any
@@ -305,8 +312,9 @@ describe('registerAppIpc', () => {
     await restartHandler?.()
 
     expect(beginShutdown).toHaveBeenCalledTimes(1)
-    expect(gracefulReset).toHaveBeenCalledTimes(1)
+    expect(gracefulReset).not.toHaveBeenCalled()
     expect(unref).toHaveBeenCalledTimes(1)
+    expect(runtimeState.isQuitting).toBe(true)
     expect(app.quit).toHaveBeenCalledTimes(1)
   })
 
@@ -332,17 +340,16 @@ describe('registerAppIpc', () => {
     await Promise.all([restartHandler?.(), restartHandler?.(), restartHandler?.()])
 
     expect(beginShutdown).toHaveBeenCalledTimes(1)
-    expect(gracefulReset).toHaveBeenCalledTimes(1)
+    expect(gracefulReset).not.toHaveBeenCalled()
     expect(app.relaunch).toHaveBeenCalledTimes(1)
     expect(app.quit).toHaveBeenCalledTimes(1)
   })
 
-  test('app:restartApp continues when gracefulReset fails', async () => {
+  test('app:restartApp does not wait for gracefulReset before quitting', async () => {
     jest.spyOn(global, 'setTimeout').mockImplementation(((fn: TimerHandler) => {
       if (typeof fn === 'function') fn()
       return 0 as any
     }) as typeof setTimeout)
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
 
     const unref = jest.fn()
     mockedSpawn.mockReturnValue({ unref })
@@ -350,7 +357,7 @@ describe('registerAppIpc', () => {
     process.env.APPIMAGE = '/tmp/app.AppImage'
 
     const beginShutdown = jest.fn()
-    const gracefulReset = jest.fn().mockRejectedValue(new Error('boom'))
+    const gracefulReset = jest.fn(() => new Promise(() => {}))
 
     const runtimeState = { isQuitting: false, suppressNextFsSync: false } as any
     const services = { usbService: { beginShutdown, gracefulReset } } as any
@@ -361,12 +368,34 @@ describe('registerAppIpc', () => {
     await restartHandler?.()
 
     expect(beginShutdown).toHaveBeenCalledTimes(1)
-    expect(gracefulReset).toHaveBeenCalledTimes(1)
+    expect(gracefulReset).not.toHaveBeenCalled()
     expect(unref).toHaveBeenCalledTimes(1)
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[MAIN] gracefulReset failed (continuing restart):',
-      expect.any(Error)
-    )
+    expect(app.quit).toHaveBeenCalledTimes(1)
+  })
+
+  test('app:restartApp uses compositor restart before quitting when available', async () => {
+    jest.spyOn(global, 'setTimeout').mockImplementation(((fn: TimerHandler) => {
+      if (typeof fn === 'function') fn()
+      return 0 as any
+    }) as typeof setTimeout)
+    mockedCompositorRestart.mockReturnValue(true)
+
+    const beginShutdown = jest.fn()
+    const gracefulReset = jest.fn()
+
+    const runtimeState = { isQuitting: false, suppressNextFsSync: false } as any
+    const services = { usbService: { beginShutdown, gracefulReset } } as any
+
+    registerAppIpc(runtimeState, services)
+
+    const restartHandler = getHandle('app:restartApp') as (() => Promise<void>) | undefined
+    await restartHandler?.()
+
+    expect(beginShutdown).toHaveBeenCalledTimes(1)
+    expect(gracefulReset).not.toHaveBeenCalled()
+    expect(mockedCompositorRestart).toHaveBeenCalledTimes(1)
+    expect(app.relaunch).not.toHaveBeenCalled()
+    expect(runtimeState.isQuitting).toBe(true)
     expect(app.quit).toHaveBeenCalledTimes(1)
   })
 
@@ -427,6 +456,7 @@ describe('registerAppIpc', () => {
     expect(spawnOptions.env).not.toHaveProperty('OWD')
 
     expect(unref).toHaveBeenCalledTimes(1)
+    expect(services.usbService.gracefulReset).not.toHaveBeenCalled()
     expect(app.relaunch).not.toHaveBeenCalled()
     expect(app.quit).toHaveBeenCalledTimes(1)
   })
@@ -502,9 +532,10 @@ describe('registerAppIpc', () => {
     await restartHandler?.()
 
     expect(beginShutdown).toHaveBeenCalledTimes(1)
-    expect(gracefulReset).toHaveBeenCalledTimes(1)
+    expect(gracefulReset).not.toHaveBeenCalled()
     expect(mockedSpawn).not.toHaveBeenCalled()
     expect(app.relaunch).toHaveBeenCalledTimes(1)
+    expect(runtimeState.isQuitting).toBe(true)
     expect(app.quit).toHaveBeenCalledTimes(1)
   })
 

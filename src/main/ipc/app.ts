@@ -8,6 +8,63 @@ import { getMainWindow } from '@main/window/createWindow'
 import { restoreKioskAfterWmExit } from '@main/window/utils'
 import { spawn } from 'child_process'
 import { app, shell } from 'electron'
+import { readdirSync, readFileSync } from 'node:fs'
+
+function collectDescendantPids(rootPid: number): number[] {
+  if (process.platform !== 'linux') return []
+
+  const childrenByParent = new Map<number, number[]>()
+  try {
+    for (const entry of readdirSync('/proc')) {
+      if (!/^\d+$/.test(entry)) continue
+      const pid = Number(entry)
+      if (!Number.isFinite(pid) || pid <= 1) continue
+
+      try {
+        const stat = readFileSync(`/proc/${pid}/stat`, 'utf8')
+        const rest = stat.slice(stat.lastIndexOf(')') + 2).split(' ')
+        const ppid = Number(rest[1])
+        if (!Number.isFinite(ppid) || ppid <= 1) continue
+
+        const children = childrenByParent.get(ppid)
+        if (children) children.push(pid)
+        else childrenByParent.set(ppid, [pid])
+      } catch {
+        // Process exited while scanning.
+      }
+    }
+  } catch {
+    return []
+  }
+
+  const descendants: number[] = []
+  const stack = [...(childrenByParent.get(rootPid) ?? [])]
+  while (stack.length) {
+    const pid = stack.pop()!
+    descendants.push(pid)
+    stack.push(...(childrenByParent.get(pid) ?? []))
+  }
+  return descendants
+}
+
+function scheduleCurrentAppChildCleanup(): void {
+  const pids = collectDescendantPids(process.pid)
+  if (!pids.length) return
+
+  try {
+    const pidArgs = pids.join(' ')
+    spawn(
+      '/bin/sh',
+      [
+        '-c',
+        `sleep 0.25; kill -TERM ${pidArgs} 2>/dev/null || true; sleep 0.75; kill -KILL ${pidArgs} 2>/dev/null || true`
+      ],
+      { detached: true, stdio: 'ignore' }
+    ).unref()
+  } catch {
+    // The restart itself must not depend on cleanup.
+  }
+}
 
 export function registerAppIpc(runtimeState: runtimeStateProps, services: ServicesProps) {
   const mainWindow = getMainWindow()
@@ -64,15 +121,8 @@ export function registerAppIpc(runtimeState: runtimeStateProps, services: Servic
     } catch {}
 
     try {
-      await usbService?.gracefulReset()
-    } catch (e) {
-      console.warn('[MAIN] gracefulReset failed (continuing restart):', e)
-    }
-
-    await new Promise((r) => setTimeout(r, 150))
-
-    try {
-      await runtimeState.telemetrySocket?.disconnect?.()
+      const disconnectPromise = runtimeState.telemetrySocket?.disconnect?.()
+      if (disconnectPromise) void Promise.resolve(disconnectPromise).catch(() => {})
     } catch {
       // best-effort
     }
@@ -80,6 +130,7 @@ export function registerAppIpc(runtimeState: runtimeStateProps, services: Servic
     // In the compositor: tell it to re-exec (full_restart), then quit ourselves cleanly so our
     // surfaces disconnect while the compositor loop is still alive
     if (compositorRestart()) {
+      scheduleCurrentAppChildCleanup()
       await new Promise((r) => setTimeout(r, 100))
       runtimeState.isQuitting = true
       app.quit()
@@ -100,6 +151,7 @@ export function registerAppIpc(runtimeState: runtimeStateProps, services: Servic
       app.relaunch()
     }
 
+    runtimeState.isQuitting = true
     app.quit()
   })
 
