@@ -287,11 +287,12 @@ describe('Projection page', () => {
 
     const graph = screen.getByTestId('projection-metric-graph')
     expect(graph).toHaveStyle({
-      top: 'calc(14.625% - 2px)',
-      left: 'calc(14.625% - 2px)',
-      width: 'calc(70.625% + 4px)',
-      height: 'calc(70.625% + 4px)',
-      borderRadius: '40px',
+      top: 'calc(14.625% - 4px)',
+      left: 'calc(14.625% - 4px)',
+      width: 'calc(70.625% + 8px)',
+      height: 'calc(70.625% + 8px)',
+      borderRadius: '42px',
+      boxShadow: '0 0 0 3px #000',
       overflow: 'hidden'
     })
 

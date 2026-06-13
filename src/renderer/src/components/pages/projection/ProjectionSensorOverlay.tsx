@@ -2323,6 +2323,7 @@ function MetricGraph({
         display: 'flex',
         flexDirection: 'column',
         borderRadius: MOTO_CENTER_CORNER_RADIUS_PX + MOTO_GRAPH_OVERLAY_OVERSCAN_PX,
+        boxShadow: '0 0 0 3px #000',
         overflow: 'hidden',
         userSelect: 'none',
         pointerEvents: 'auto'

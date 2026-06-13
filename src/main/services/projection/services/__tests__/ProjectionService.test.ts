@@ -2284,7 +2284,7 @@ describe('ProjectionService', () => {
     expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
   })
 
-  test('backdrop changes use the low-rate sampled native main video path', () => {
+  test('backdrop changes do not recreate the native main video player', () => {
     const svc = new ProjectionService() as any
     svc.webContents = { send: jest.fn(), isDestroyed: jest.fn(() => false) }
     svc.stop = jest.fn()
@@ -2309,23 +2309,10 @@ describe('ProjectionService', () => {
       roundedCornerMaskEnabled: true
     })
 
-    expect(first.dispose).toHaveBeenCalledTimes(1)
-    expect(svc.gstVideo).toBeNull()
-    emitMainVideoFrame(svc)
-
-    const second = mockGstVideoInstances[1]
-    expect(second.args[3]).toMatchObject({
-      dynamicBackdrop: false,
-      sampledBackdrop: true,
-      displayWidth: 800,
-      displayHeight: 800,
-      viewAreaTop: 118,
-      viewAreaBottom: 118,
-      viewAreaLeft: 118,
-      viewAreaRight: 118
-    })
+    expect(first.dispose).not.toHaveBeenCalled()
+    expect(svc.gstVideo).toBe(first)
     expect(svc.stop).not.toHaveBeenCalled()
-    expect(mockGstVideoConstructor).toHaveBeenCalledTimes(2)
+    expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
   })
 
   test('sampled backdrop colors paint the compositor and renderer only while backdrop is enabled', () => {
