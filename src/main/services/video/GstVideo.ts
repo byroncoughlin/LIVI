@@ -9,6 +9,8 @@ export type GstVideoCodec = 'h264' | 'h265' | 'vp9' | 'av1'
 
 export type GstVideoOptions = {
   dynamicBackdrop?: boolean
+  sampledBackdrop?: boolean
+  onBackdropColor?: (hex: string) => void
   displayWidth?: number
   displayHeight?: number
   viewAreaTop?: number
@@ -244,11 +246,11 @@ function n(v: number | undefined): number {
 }
 
 function encodePlayerOptions(options: GstVideoOptions, region: GstVideoRegion): string {
-  if (options.dynamicBackdrop !== true) return ''
+  if (options.dynamicBackdrop !== true && options.sampledBackdrop !== true) return ''
 
   const displayWidth = n(options.displayWidth)
   const displayHeight = n(options.displayHeight)
-  if (displayWidth <= 0 || displayHeight <= 0) return ''
+  if (options.dynamicBackdrop === true && (displayWidth <= 0 || displayHeight <= 0)) return ''
 
   const r = region
   const tierW = n(r?.tierW) || displayWidth
@@ -257,7 +259,9 @@ function encodePlayerOptions(options: GstVideoOptions, region: GstVideoRegion): 
   const visH = n(r?.visH) || tierH
 
   const values: Record<string, number> = {
-    bd: 1,
+    bd: options.dynamicBackdrop === true ? 1 : 0,
+    sb: options.sampledBackdrop === true ? 1 : 0,
+    sr: 1,
     dw: displayWidth,
     dh: displayHeight,
     vt: n(options.viewAreaTop),
@@ -333,7 +337,7 @@ export class GstVideo {
       if (this.started && this.codec === codec) return
       this.dispose()
       compositorControl.claim(this.role) // tag the waylandsink toplevel the host process creates next
-      gstHost.createPlayer(this.id, codec, playerOptions)
+      gstHost.createPlayer(this.id, codec, playerOptions, this.options.onBackdropColor)
       this.codec = codec
       this.started = true
       return
@@ -386,7 +390,11 @@ export class GstVideo {
     const prevRegionKey = regionKey(this.region)
     this.region = visW > 0 && visH > 0 ? { cropL, cropT, visW, visH, tierW, tierH } : null
     const nextRegionKey = regionKey(this.region)
-    if (this.options.dynamicBackdrop === true && this.started && prevRegionKey !== nextRegionKey) {
+    if (
+      (this.options.dynamicBackdrop === true || this.options.sampledBackdrop === true) &&
+      this.started &&
+      prevRegionKey !== nextRegionKey
+    ) {
       this.dispose()
     }
 

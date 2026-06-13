@@ -32,6 +32,10 @@ let telemetryHandlers: TelemetryHandler[] = []
 let projectionEventQueue: Array<[IpcRendererEvent, ...unknown[]]> = []
 let projectionEventHandlers: Array<ApiCallback> = []
 
+type BackdropColorHandler = (color: string | null) => void
+let lastBackdropColor: string | null = null
+let backdropColorHandlers: BackdropColorHandler[] = []
+
 ipcRenderer.on('projection-audio-chunk', (_event, payload: unknown) => {
   if (audioChunkHandler) audioChunkHandler(payload)
   else {
@@ -60,6 +64,12 @@ ipcRenderer.on('projection-event', (event, ...args: unknown[]) => {
   } else {
     projectionEventQueue.push([event, ...args])
   }
+})
+
+ipcRenderer.on('projection-backdrop-color', (_event, payload: unknown) => {
+  const color = typeof payload === 'string' && /^#[0-9a-fA-F]{6}$/.test(payload) ? payload : null
+  lastBackdropColor = color
+  backdropColorHandlers.forEach((handler) => handler(color))
 })
 
 // Main broadcasts media key events
@@ -178,6 +188,13 @@ const api = {
       projectionEventQueue = []
       return () => {
         projectionEventHandlers = projectionEventHandlers.filter((cb) => cb !== callback)
+      }
+    },
+    onBackdropColor: (handler: BackdropColorHandler): (() => void) => {
+      backdropColorHandlers.push(handler)
+      handler(lastBackdropColor)
+      return () => {
+        backdropColorHandlers = backdropColorHandlers.filter((h) => h !== handler)
       }
     },
     readMedia: (): Promise<unknown> => ipcRenderer.invoke('projection-media-read'),

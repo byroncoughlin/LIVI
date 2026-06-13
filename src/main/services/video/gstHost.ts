@@ -14,7 +14,7 @@ function crashLogPath(): string {
 }
 
 // Frame: [uint32 LE len][uint8 op][uint32 LE id][rest].
-// op 1 create(codec or "codec\nkey=value,..."), 2 data, 3 stop.
+// op 1 create(codec or "codec\nkey=value,..."), 2 data, 3 stop, 4 backdrop RGB sample.
 function frame(op: number, id: number, rest: Buffer): Buffer {
   const head = Buffer.allocUnsafe(9)
   head.writeUInt32LE(5 + rest.length, 0)
@@ -32,6 +32,8 @@ class GstHost {
   private starting = false
   private quitHooked = false
   private readonly queue: Buffer[] = []
+  private recv: Buffer<ArrayBufferLike> = Buffer.alloc(0)
+  private readonly backdropColorHandlers = new Map<number, (hex: string) => void>()
 
   private start(): void {
     if (this.child || this.starting) return
@@ -66,6 +68,7 @@ class GstHost {
       this.sock = s
       for (const b of this.queue) s.write(b)
       this.queue.length = 0
+      s.on('data', (chunk) => this.handleHostData(chunk))
       s.on('error', () => {})
       s.on('close', () => {
         if (this.sock === s) this.sock = null
@@ -106,7 +109,35 @@ class GstHost {
     else this.queue.push(buf)
   }
 
-  createPlayer(id: number, codec: string, options = ''): void {
+  private handleHostData(chunk: Buffer | string): void {
+    const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+    this.recv = this.recv.length ? Buffer.concat([this.recv, buf]) : buf
+    while (this.recv.length >= 4) {
+      const len = this.recv.readUInt32LE(0)
+      if (this.recv.length < 4 + len) break
+      if (len >= 5) {
+        const op = this.recv.readUInt8(4)
+        const id = this.recv.readUInt32LE(5)
+        const rest = this.recv.subarray(9, 4 + len)
+        if (op === 4 && rest.length >= 3) {
+          const hex = `#${[rest[0], rest[1], rest[2]]
+            .map((v) => v.toString(16).padStart(2, '0'))
+            .join('')}`
+          this.backdropColorHandlers.get(id)?.(hex)
+        }
+      }
+      this.recv = this.recv.subarray(4 + len)
+    }
+  }
+
+  createPlayer(
+    id: number,
+    codec: string,
+    options = '',
+    onBackdropColor?: (hex: string) => void
+  ): void {
+    if (onBackdropColor) this.backdropColorHandlers.set(id, onBackdropColor)
+    else this.backdropColorHandlers.delete(id)
     const payload = options ? `${codec}\n${options}` : codec
     this.send(frame(1, id, Buffer.from(payload, 'utf8')))
   }
@@ -116,6 +147,7 @@ class GstHost {
   }
 
   stop(id: number): void {
+    this.backdropColorHandlers.delete(id)
     this.send(frame(3, id, Buffer.alloc(0)))
   }
 }

@@ -24,6 +24,7 @@ type CarplayIpcApi = {
   connectBluetoothPairedDevice?: (mac: string) => Promise<{ ok: boolean }> | { ok: boolean } | void
   forgetBluetoothPairedDevice?: (mac: string) => Promise<{ ok: boolean }> | { ok: boolean } | void
   sendCommand?: (command: string) => void
+  onBackdropColor?: (handler: (color: string | null) => void) => () => void
   onTelemetry?: (handler: (payload: unknown) => void) => void
   offTelemetry?: (handler: (payload: unknown) => void) => void
   getTelemetrySnapshot?: () => Promise<unknown>
@@ -170,6 +171,8 @@ export interface CarplayStore {
   negotiatedWidth: number | null
   negotiatedHeight: number | null
   setNegotiatedResolution: (width: number, height: number) => void
+  backdropSampleColor: string | null
+  setBackdropSampleColor: (color: string | null) => void
 
   // USB descriptor
   vendorId: number | null
@@ -458,6 +461,12 @@ export const useLiviStore = create<CarplayStore>((set, get) => {
           applyTelemetryControls(payload)
         })
       }
+
+      if (api?.ipc?.onBackdropColor) {
+        api.ipc.onBackdropColor((color) => {
+          set({ backdropSampleColor: color })
+        })
+      }
     },
 
     getSettings: async () => {
@@ -517,6 +526,8 @@ export const useLiviStore = create<CarplayStore>((set, get) => {
     negotiatedHeight: null,
     setNegotiatedResolution: (width, height) =>
       set({ negotiatedWidth: width, negotiatedHeight: height }),
+    backdropSampleColor: null,
+    setBackdropSampleColor: (color) => set({ backdropSampleColor: color }),
 
     vendorId: null,
     productId: null,

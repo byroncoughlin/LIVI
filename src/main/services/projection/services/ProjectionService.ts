@@ -13,7 +13,7 @@ import {
   isClusterDisplayed,
   translateNavigation
 } from '@shared/utils'
-import { app, WebContents } from 'electron'
+import { app, BrowserWindow, WebContents } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { usb } from 'usb'
@@ -27,7 +27,9 @@ import {
   GstVideo,
   type GstVideoCodec,
   type GstVideoOptions,
-  probeGstCodecs
+  probeGstCodecs,
+  setCompositorBackdrop,
+  setMacBackdrop
 } from '../../video/GstVideo'
 import { AaBtSockClient } from '../driver/aa/AaBtSockClient'
 import { AaBluetoothSupervisor } from '../driver/aa/aaBluetoothSupervisor'
@@ -160,6 +162,7 @@ export class ProjectionService {
   private gstVideo: GstVideo | null = null
   private gstVideoCodec: GstVideoCodec = 'h264'
   private gstVideoVisible = true
+  private sampledBackdropColor: string | null = null
   private videoCrop: {
     cropL: number
     cropT: number
@@ -270,6 +273,10 @@ export class ProjectionService {
       this.recreateMainGstVideo()
     }
 
+    if (prev?.backdropEnabled !== this.config.backdropEnabled) {
+      this.clearSampledBackdropColor()
+    }
+
     // Seed AA's initial NIGHT_MODE
     if (next.appearanceMode !== prev?.appearanceMode) {
       this.aaDriver?.setInitialNightMode(deriveInitialNightMode(next.appearanceMode))
@@ -303,6 +310,8 @@ export class ProjectionService {
   private mainGstVideoOptions(cfg: Config = this.config): GstVideoOptions {
     return {
       dynamicBackdrop: false,
+      sampledBackdrop: cfg.backdropEnabled === true,
+      onBackdropColor: (hex) => this.applySampledBackdropColor(hex),
       displayWidth: cfg.projectionWidth ?? 0,
       displayHeight: cfg.projectionHeight ?? 0,
       viewAreaTop: cfg.projectionViewAreaTop ?? 0,
@@ -316,6 +325,7 @@ export class ProjectionService {
     const opts = this.mainGstVideoOptions(cfg)
     return [
       opts.dynamicBackdrop === true ? 1 : 0,
+      opts.sampledBackdrop === true ? 1 : 0,
       opts.displayWidth ?? 0,
       opts.displayHeight ?? 0,
       opts.viewAreaTop ?? 0,
@@ -329,6 +339,35 @@ export class ProjectionService {
     if (!this.gstVideo) return
     this.gstVideo.dispose()
     this.gstVideo = null
+  }
+
+  private clearSampledBackdropColor(): void {
+    if (this.sampledBackdropColor == null) return
+    this.sampledBackdropColor = null
+    for (const wc of this.getAllUiWebContents()) {
+      try {
+        wc.send('projection-backdrop-color', null)
+      } catch {
+        // ignored: detached webContents
+      }
+    }
+  }
+
+  private applySampledBackdropColor(hex: string): void {
+    if (this.config.backdropEnabled !== true) return
+    if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return
+    const color = hex.toLowerCase()
+    if (color === this.sampledBackdropColor) return
+    this.sampledBackdropColor = color
+    setCompositorBackdrop(color)
+    for (const w of BrowserWindow.getAllWindows()) setMacBackdrop(w, color)
+    for (const wc of this.getAllUiWebContents()) {
+      try {
+        wc.send('projection-backdrop-color', color)
+      } catch {
+        // ignored: detached webContents
+      }
+    }
   }
 
   private syncAaBtSupervisor(): void {

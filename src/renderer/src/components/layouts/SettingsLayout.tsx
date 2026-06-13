@@ -75,17 +75,17 @@ function HeaderActionButton({
         color: palette.color,
         minWidth: 0,
         width: '100%',
-        height: '58px',
+        height: '68px',
         p: 0,
         display: 'grid',
         placeItems: 'center',
-        gridTemplateRows: '28px 16px',
-        gap: '2px',
+        gridTemplateRows: '32px 18px',
+        gap: '3px',
         cursor: 'pointer',
         userSelect: 'none',
         touchAction: 'manipulation',
         WebkitTapHighlightColor: 'transparent',
-        '& svg': { fontSize: 27 },
+        '& svg': { fontSize: 31 },
         '&:active': {
           transform: 'translateY(1px)',
           borderColor: palette.color,
@@ -101,7 +101,7 @@ function HeaderActionButton({
       <Box
         component="span"
         sx={{
-          fontSize: '10px',
+          fontSize: '11px',
           lineHeight: 1,
           fontWeight: 900,
           letterSpacing: 0,
@@ -253,7 +253,7 @@ export const SettingsLayout = ({
         overflow: 'hidden',
         boxSizing: 'border-box',
         p: '12px',
-        gap: '9px',
+        gap: '10px',
         background: 'linear-gradient(180deg, rgba(14,18,22,0.98), rgba(5,7,10,0.98))',
         color: 'text.primary'
       }}
@@ -262,8 +262,8 @@ export const SettingsLayout = ({
         data-testid="settings-header-actions"
         sx={{
           display: 'grid',
-          gridTemplateColumns: '74px 88px minmax(0, 1fr) 74px 64px',
-          gap: '8px',
+          gridTemplateColumns: '84px 96px minmax(0, 1fr) 86px 72px',
+          gap: '7px',
           alignItems: 'center',
           flex: '0 0 auto'
         }}
@@ -285,7 +285,7 @@ export const SettingsLayout = ({
         <Box
           sx={{
             minWidth: 0,
-            height: '58px',
+            height: '68px',
             borderRadius: '8px',
             border: '1px solid rgba(255,255,255,0.1)',
             background: 'rgba(255,255,255,0.045)',
@@ -298,7 +298,7 @@ export const SettingsLayout = ({
             data-testid="settings-clock"
             sx={{
               fontFamily: 'monospace',
-              fontSize: '36px',
+              fontSize: '37px',
               lineHeight: 1,
               fontWeight: 900,
               letterSpacing: 0,
@@ -325,12 +325,12 @@ export const SettingsLayout = ({
           disableTouchRipple
           sx={{
             width: '64px',
-            height: '58px',
+            height: '68px',
             borderRadius: '8px',
             border: '1px solid rgba(255,255,255,0.14)',
             color: '#f8fafc',
             background: 'rgba(255,255,255,0.055)',
-            '& svg': { fontSize: 35 },
+            '& svg': { fontSize: 39 },
             '&:active': { transform: 'translateY(1px)' }
           }}
         >
@@ -343,9 +343,9 @@ export const SettingsLayout = ({
           data-testid="settings-section-bar"
           sx={{
             display: 'grid',
-            gridTemplateColumns: '72px minmax(0, 1fr) 96px',
+            gridTemplateColumns: '96px minmax(0, 1fr) 112px',
             alignItems: 'center',
-            minHeight: '42px',
+            minHeight: '56px',
             gap: '8px',
             flex: '0 0 auto'
           }}
@@ -359,15 +359,15 @@ export const SettingsLayout = ({
               disableFocusRipple
               disableTouchRipple
               sx={{
-                width: '72px',
-                height: '42px',
+                width: '96px',
+                height: '56px',
                 borderRadius: '8px',
                 border: '1px solid rgba(255,255,255,0.12)',
                 color: '#d8dee9',
                 background: 'rgba(255,255,255,0.045)'
               }}
             >
-              <ArrowBackIosOutlinedIcon sx={{ fontSize: 22 }} />
+              <ArrowBackIosOutlinedIcon sx={{ fontSize: 28 }} />
             </IconButton>
           ) : (
             <Box />
@@ -397,13 +397,13 @@ export const SettingsLayout = ({
               startIcon={<RestartAltOutlinedIcon sx={{ fontSize: 19 }} />}
               sx={{
                 minWidth: 0,
-                height: '42px',
+                height: '56px',
                 borderRadius: '8px',
                 px: '10px',
                 color: '#7ee787',
                 borderColor: 'rgba(126,231,135,0.32)',
                 fontWeight: 900,
-                fontSize: '12px',
+                fontSize: '14px',
                 lineHeight: 1
               }}
             >
@@ -430,11 +430,11 @@ export const SettingsLayout = ({
             ? {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: '8px',
-                alignContent: 'stretch',
-                gridAutoRows: 'minmax(0, 1fr)',
-                height: '100%',
-                minHeight: '100%'
+                gap: '10px',
+                alignContent: 'start',
+                gridAutoRows: '112px',
+                height: 'auto',
+                minHeight: 0
               }
             : {
                 display: 'flex',
@@ -443,7 +443,7 @@ export const SettingsLayout = ({
               },
           '& .settings-content-stack > .MuiPaper-root': isSettingsRoot
             ? {
-                minHeight: '220px',
+                minHeight: '112px',
                 borderRadius: '8px',
                 border: '1px solid rgba(255,255,255,0.12)',
                 borderBottom: '1px solid rgba(255,255,255,0.12)',
@@ -452,22 +452,22 @@ export const SettingsLayout = ({
                 gridTemplateColumns: '1fr',
                 justifyItems: 'center',
                 alignItems: 'center',
-                p: '18px',
-                gap: '12px',
+                p: '14px',
+                gap: '8px',
                 '& > p': {
                   width: '100%',
                   p: 0,
                   justifyContent: 'center',
                   textAlign: 'center',
                   color: '#f8fafc',
-                  fontSize: '24px',
+                  fontSize: '22px',
                   fontWeight: 900,
                   lineHeight: 1.05
                 },
                 '& > svg': {
                   position: 'static',
                   color: 'rgba(255,255,255,0.58)',
-                  fontSize: '30px'
+                  fontSize: '28px'
                 }
               }
             : undefined

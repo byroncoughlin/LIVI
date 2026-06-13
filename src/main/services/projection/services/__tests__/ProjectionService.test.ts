@@ -135,6 +135,8 @@ const mockGstVideoConstructor = jest.fn((...args: unknown[]) => {
 
 jest.mock('@main/services/video/GstVideo', () => ({
   GstVideo: mockGstVideoConstructor,
+  setCompositorBackdrop: jest.fn(),
+  setMacBackdrop: jest.fn(),
   probeGstCodecs: jest.fn(() => ({
     h264: { hw: false, sw: true },
     h265: { hw: true, sw: true },
@@ -154,6 +156,9 @@ jest.mock('@main/ipc/utils', () => ({
 jest.mock('electron', () => ({
   app: {
     getPath: jest.fn(() => '/tmp/appdata')
+  },
+  BrowserWindow: {
+    getAllWindows: jest.fn(() => [])
   },
   WebContents: class {}
 }))
@@ -2257,8 +2262,9 @@ describe('ProjectionService', () => {
 
     expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
     const first = mockGstVideoInstances[0]
-    expect(first.args[3]).toEqual({
+    expect(first.args[3]).toMatchObject({
       dynamicBackdrop: false,
+      sampledBackdrop: false,
       displayWidth: 800,
       displayHeight: 800,
       viewAreaTop: 118,
@@ -2278,7 +2284,7 @@ describe('ProjectionService', () => {
     expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
   })
 
-  test('backdrop changes stay on the low-cost native main video path', () => {
+  test('backdrop changes use the low-rate sampled native main video path', () => {
     const svc = new ProjectionService() as any
     svc.webContents = { send: jest.fn(), isDestroyed: jest.fn(() => false) }
     svc.stop = jest.fn()
@@ -2303,10 +2309,46 @@ describe('ProjectionService', () => {
       roundedCornerMaskEnabled: true
     })
 
-    expect(first.dispose).not.toHaveBeenCalled()
-    expect(svc.gstVideo).toBe(first)
+    expect(first.dispose).toHaveBeenCalledTimes(1)
+    expect(svc.gstVideo).toBeNull()
+    emitMainVideoFrame(svc)
+
+    const second = mockGstVideoInstances[1]
+    expect(second.args[3]).toMatchObject({
+      dynamicBackdrop: false,
+      sampledBackdrop: true,
+      displayWidth: 800,
+      displayHeight: 800,
+      viewAreaTop: 118,
+      viewAreaBottom: 118,
+      viewAreaLeft: 118,
+      viewAreaRight: 118
+    })
     expect(svc.stop).not.toHaveBeenCalled()
-    expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
+    expect(mockGstVideoConstructor).toHaveBeenCalledTimes(2)
+  })
+
+  test('sampled backdrop colors paint the compositor and renderer only while backdrop is enabled', () => {
+    const svc = new ProjectionService() as any
+    const send = jest.fn()
+    svc.webContents = { send, isDestroyed: jest.fn(() => false) }
+    svc.config = {
+      ...svc.config,
+      backdropEnabled: true
+    }
+    const video = jest.requireMock('@main/services/video/GstVideo') as {
+      setCompositorBackdrop: jest.Mock
+    }
+
+    svc.applySampledBackdropColor('#32506C')
+
+    expect(video.setCompositorBackdrop).toHaveBeenCalledWith('#32506c')
+    expect(send).toHaveBeenCalledWith('projection-backdrop-color', '#32506c')
+
+    svc.config = { ...svc.config, backdropEnabled: false }
+    svc.applySampledBackdropColor('#101010')
+
+    expect(video.setCompositorBackdrop).toHaveBeenCalledTimes(1)
   })
 
   test('main video frame burst emits projectionActive once', () => {

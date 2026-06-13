@@ -3,6 +3,7 @@
 #endif
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
+#include <gst/app/gstappsink.h>
 #include <gst/base/gstbasesink.h>
 #include <gst/video/videooverlay.h>
 #include <gst/video/video.h>
@@ -49,11 +50,20 @@ struct Player {
   GstElement* pipeline = nullptr;
   GstElement* appsrc = nullptr;
   GstElement* sink = nullptr;
+  GstElement* sample_sink = nullptr;
   void* view = nullptr;
+#ifdef __linux__
+  int host_fd = -1;
+  guint32 host_id = 0;
+  guint8 last_sample_rgb[3] = {0, 0, 0};
+  bool has_sample_rgb = false;
+#endif
 };
 
 struct PlayerOptions {
   bool dynamic_backdrop = false;
+  bool sampled_backdrop = false;
+  int sample_rate = 1;
   int display_w = 0;
   int display_h = 0;
   int view_t = 0;
@@ -330,6 +340,8 @@ static void parse_player_options(const std::string& s, PlayerOptions* opt) {
       std::string key = item.substr(0, eq);
       int value = atoi(item.substr(eq + 1).c_str());
       if (key == "bd") opt->dynamic_backdrop = value == 1;
+      else if (key == "sb") opt->sampled_backdrop = value == 1;
+      else if (key == "sr") opt->sample_rate = clamp_i(value, 1, 4);
       else if (key == "dw") opt->display_w = value;
       else if (key == "dh") opt->display_h = value;
       else if (key == "vt") opt->view_t = value;
@@ -405,6 +417,7 @@ static void livi_free_player(Player* p) {
     gst_element_set_state(p->pipeline, GST_STATE_NULL);
     if (p->appsrc) gst_object_unref(p->appsrc);
     if (p->sink) gst_object_unref(p->sink);
+    if (p->sample_sink) gst_object_unref(p->sample_sink);
     gst_object_unref(p->pipeline);
   }
   remove_video_view(p);
@@ -429,6 +442,69 @@ static std::string normal_pipeline_desc(const std::string& codec, const char* de
     " ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream" +
     " ! " + presink + sink_chain();
 }
+
+static std::string sampled_backdrop_pipeline_desc(const std::string& codec, const char* decoder,
+    const std::string& presink, const PlayerOptions& opt) {
+  int sample_rate = clamp_i(opt.sample_rate, 1, 4);
+  return "appsrc name=src is-live=true do-timestamp=true format=time"
+    " min-latency=0 max-latency=0 caps=" +
+    caps_for(codec) + " ! " + parser_for(codec) +
+    " ! queue max-size-buffers=0 max-size-bytes=0 max-size-time=2000000000" +
+    " ! " + std::string(decoder) + " name=dec" +
+    " ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream" +
+    " ! tee name=t"
+    " t. ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream"
+    " ! " + presink + sink_chain() +
+    " t. ! queue max-size-buffers=1 max-size-bytes=0 max-size-time=0 leaky=downstream"
+    " ! videorate drop-only=true max-rate=" + std::to_string(sample_rate) +
+    " ! videoscale method=1 ! video/x-raw,width=1,height=1"
+    " ! videoconvert ! video/x-raw,format=RGB"
+    " ! appsink name=sample_sink emit-signals=true sync=false max-buffers=1 drop=true";
+}
+
+#ifdef __linux__
+static void livi_host_write_frame(int fd, guint8 op, guint32 id, const guint8* data, guint32 len) {
+  if (fd < 0) return;
+  guint32 frame_len = 5 + len;
+  guint8 head[9];
+  memcpy(head, &frame_len, 4);
+  head[4] = op;
+  memcpy(head + 5, &id, 4);
+  (void)!write(fd, head, sizeof(head));
+  if (len > 0 && data) (void)!write(fd, data, len);
+}
+
+static bool sample_delta_visible(const guint8* a, const guint8* b) {
+  return std::abs((int)a[0] - (int)b[0]) +
+      std::abs((int)a[1] - (int)b[1]) +
+      std::abs((int)a[2] - (int)b[2]) >= 10;
+}
+
+static GstFlowReturn sampled_backdrop_new_sample(GstElement* sink, gpointer data) {
+  Player* p = static_cast<Player*>(data);
+  if (!p || p->host_fd < 0 || p->host_id == 0) return GST_FLOW_OK;
+
+  GstSample* sample = gst_app_sink_pull_sample(GST_APP_SINK(sink));
+  if (!sample) return GST_FLOW_OK;
+
+  GstBuffer* buffer = gst_sample_get_buffer(sample);
+  GstMapInfo map;
+  if (buffer && gst_buffer_map(buffer, &map, GST_MAP_READ)) {
+    if (map.size >= 3) {
+      guint8 rgb[3] = {map.data[0], map.data[1], map.data[2]};
+      if (!p->has_sample_rgb || sample_delta_visible(rgb, p->last_sample_rgb)) {
+        memcpy(p->last_sample_rgb, rgb, sizeof(rgb));
+        p->has_sample_rgb = true;
+        livi_host_write_frame(p->host_fd, 4, p->host_id, rgb, sizeof(rgb));
+      }
+    }
+    gst_buffer_unmap(buffer, &map);
+  }
+
+  gst_sample_unref(sample);
+  return GST_FLOW_OK;
+}
+#endif
 
 static std::string dynamic_backdrop_pipeline_desc(const std::string& codec, const char* decoder,
     const PlayerOptions& opt) {
@@ -488,7 +564,9 @@ static std::string dynamic_backdrop_pipeline_desc(const std::string& codec, cons
     ",height=" + std::to_string(blur_h) +
     " ! videoconvert ! video/x-raw,format=AYUV"
     " ! gaussianblur sigma=8 qos=false"
-    " ! videoscale method=0 ! video/x-raw,width=" + std::to_string(dw) +
+    // Keep the blur branch cheap at low resolution, then use bilinear upscale so the
+    // 800x800 backdrop does not show nearest-neighbor blocks.
+    " ! videoscale method=1 ! video/x-raw,width=" + std::to_string(dw) +
     ",height=" + std::to_string(dh) +
     " ! comp.sink_0"
     " t. ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream"
@@ -500,7 +578,7 @@ static std::string dynamic_backdrop_pipeline_desc(const std::string& codec, cons
 // Build the decode + waylandsink pipeline for a codec. handle is the native window for the
 // mac/Windows overlay, unused on Linux. Returns NULL on parse failure.
 static Player* livi_create_player(const std::string& codec, guintptr handle,
-    const PlayerOptions& options = PlayerOptions()) {
+    const PlayerOptions& options = PlayerOptions(), int host_fd = -1, guint32 host_id = 0) {
   // Live low-latency, two queues on purpose:
   //  - BEFORE the decoder: NON-leaky. A stateless HW decoder needs every
   //    encoded frame for its reference chain, dropping one corrupts the DPB
@@ -520,6 +598,7 @@ static Player* livi_create_player(const std::string& codec, guintptr handle,
   std::string normal_desc = normal_pipeline_desc(codec, decoder, presink);
   std::string desc = normal_desc;
   bool dynamic = options.dynamic_backdrop;
+  bool sampled = !dynamic && options.sampled_backdrop;
   if (dynamic) {
     std::string dyn = dynamic_backdrop_pipeline_desc(codec, decoder, options);
     if (!dyn.empty()) {
@@ -528,10 +607,12 @@ static Player* livi_create_player(const std::string& codec, guintptr handle,
       dynamic = false;
       fprintf(stderr, "[gst_video] dynamic backdrop requested but geometry is invalid; using normal pipeline\n");
     }
+  } else if (sampled) {
+    desc = sampled_backdrop_pipeline_desc(codec, decoder, presink, options);
   }
 
-  fprintf(stderr, "[gst_video] codec=%s decoder=%s dynamic_backdrop=%d | %s\n",
-    codec.c_str(), decoder, dynamic ? 1 : 0, desc.c_str());
+  fprintf(stderr, "[gst_video] codec=%s decoder=%s dynamic_backdrop=%d sampled_backdrop=%d | %s\n",
+    codec.c_str(), decoder, dynamic ? 1 : 0, sampled ? 1 : 0, desc.c_str());
 
   GError* err = nullptr;
   GstElement* pipeline = gst_parse_launch(desc.c_str(), &err);
@@ -540,10 +621,11 @@ static Player* livi_create_player(const std::string& codec, guintptr handle,
       err ? err->message : "unknown");
     if (err) g_error_free(err);
     if (pipeline) gst_object_unref(pipeline);
-    if (dynamic) {
-      fprintf(stderr, "[gst_video] falling back to normal pipeline after dynamic backdrop failure\n");
+    if (dynamic || sampled) {
+      fprintf(stderr, "[gst_video] falling back to normal pipeline after backdrop pipeline failure\n");
       err = nullptr;
       desc = normal_desc;
+      sampled = false;
       pipeline = gst_parse_launch(desc.c_str(), &err);
       if (!pipeline || err) {
         fprintf(stderr, "[gst_video] fallback pipeline parse FAILED: %s\n",
@@ -561,6 +643,17 @@ static Player* livi_create_player(const std::string& codec, guintptr handle,
   p->pipeline = pipeline;
   p->appsrc = gst_bin_get_by_name(GST_BIN(pipeline), "src");
   p->sink = gst_bin_get_by_name(GST_BIN(pipeline), "sink");
+  p->sample_sink = gst_bin_get_by_name(GST_BIN(pipeline), "sample_sink");
+#ifdef __linux__
+  p->host_fd = host_fd;
+  p->host_id = host_id;
+  if (p->sample_sink && sampled) {
+    g_signal_connect(p->sample_sink, "new-sample", G_CALLBACK(sampled_backdrop_new_sample), p);
+  }
+#else
+  (void)host_fd;
+  (void)host_id;
+#endif
 
   force_sinks_realtime(pipeline);
 
@@ -768,6 +861,7 @@ static napi_value SetBackdrop(napi_env env, napi_callback_info info) {
 struct LiviHost {
   GByteArray* buf;
   GHashTable* players;  // id -> Player*
+  int fd;
 };
 
 static void livi_host_dispatch(LiviHost* h, guint8 op, guint32 id, const guint8* rest, gsize rlen) {
@@ -781,7 +875,7 @@ static void livi_host_dispatch(LiviHost* h, guint8 op, guint32 id, const guint8*
       g_hash_table_remove(h->players, key);
       livi_free_player(old);
     }
-    Player* p = livi_create_player(codec, 0, options);
+    Player* p = livi_create_player(codec, 0, options, h->fd, id);
     if (p) {
       gst_element_set_state(p->pipeline, GST_STATE_PLAYING);
       g_hash_table_insert(h->players, key, p);
@@ -867,6 +961,7 @@ static void livi_host_main(const char* sockPath, const char* crashLogPath) {
   LiviHost* h = new LiviHost();
   h->buf = g_byte_array_new();
   h->players = g_hash_table_new(g_direct_hash, g_direct_equal);
+  h->fd = fd;
   g_unix_fd_add(fd, (GIOCondition)(G_IO_IN | G_IO_HUP | G_IO_ERR), livi_host_readable, h);
 
   fprintf(stderr, "[gst-host] ready, running main loop\n");

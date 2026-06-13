@@ -25,6 +25,7 @@ const statusState: Record<string, any> = {
 const liviState: Record<string, any> = {
   negotiatedWidth: 0,
   negotiatedHeight: 0,
+  backdropSampleColor: null,
   dongleFwVersion: '',
   boxInfo: null,
   resetInfo: jest.fn(),
@@ -129,6 +130,7 @@ describe('Projection page', () => {
 
     liviState.negotiatedWidth = 0
     liviState.negotiatedHeight = 0
+    liviState.backdropSampleColor = null
     liviState.dongleFwVersion = ''
     liviState.boxInfo = null
     liviState.resetInfo.mockClear()
@@ -285,11 +287,11 @@ describe('Projection page', () => {
 
     const graph = screen.getByTestId('projection-metric-graph')
     expect(graph).toHaveStyle({
-      top: '14.625%',
-      left: '14.625%',
-      width: '70.625%',
-      height: '70.625%',
-      borderRadius: '34px',
+      top: 'calc(14.625% - 2px)',
+      left: 'calc(14.625% - 2px)',
+      width: 'calc(70.625% + 4px)',
+      height: 'calc(70.625% + 4px)',
+      borderRadius: '40px',
       overflow: 'hidden'
     })
 
@@ -692,6 +694,8 @@ describe('Projection page', () => {
   })
 
   test('renders backdrop as a low-cost solid fill while keeping corner masks', () => {
+    liviState.backdropSampleColor = '#32506c'
+
     render(
       <Projection
         {...baseProps({
@@ -713,11 +717,11 @@ describe('Projection page', () => {
     )
 
     expect(screen.getByTestId('view-area-mask-top')).toHaveStyle({
-      backgroundColor: '#20364a'
+      backgroundColor: '#32506c'
     })
     expect(screen.getByTestId('view-area-corner-mask-top-left')).toBeInTheDocument()
     expect(screen.getByTestId('view-area-corner-mask-top-left').style.background).toContain(
-      '#20364a'
+      '#32506c'
     )
   })
 

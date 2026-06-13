@@ -1,9 +1,10 @@
 import { useTheme } from '@mui/material'
 import type { CSSProperties } from 'react'
+import { MOTO_CENTER_CORNER_RADIUS_PX } from './motoLayout'
 
 export type ViewAreaInsets = { top: number; bottom: number; left: number; right: number }
 
-const CORNER_RADIUS_PX = 38
+const CORNER_RADIUS_PX = MOTO_CENTER_CORNER_RADIUS_PX
 const BAR_Z_INDEX = 5
 const CORNER_Z_INDEX = 12
 

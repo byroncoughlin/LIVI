@@ -167,6 +167,7 @@ declare global {
         sendRawMessage(type: number, data: Uint8Array): void
 
         onEvent(callback: (event: unknown, ...args: unknown[]) => void): () => void
+        onBackdropColor(handler: (color: string | null) => void): () => void
 
         onTelemetry(handler: (payload: unknown) => void): void
         offTelemetry(handler: (payload: unknown) => void): void

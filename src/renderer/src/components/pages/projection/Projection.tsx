@@ -338,6 +338,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
   const theme = useTheme()
 
   // Zustand store
+  const backdropSampleColor = useLiviStore((s) => s.backdropSampleColor)
   const isStreaming = useStatusStore((s) => s.isStreaming)
   const setStreaming = useStatusStore((s) => s.setStreaming)
   const setDongleConnected = useStatusStore((s) => s.setDongleConnected)
@@ -1118,7 +1119,10 @@ const CarplayComponent: React.FC<CarplayProps> = ({
   const visibleWidth = aaContent?.contentWidth ?? resolvedNegotiatedWidth
   const visibleHeight = aaContent?.contentHeight ?? resolvedNegotiatedHeight
   const fillEnabled = motoFillEnabled(settings)
-  const maskColor = motoFillHex(settings)
+  const maskColor =
+    settings.backdropEnabled === true
+      ? (backdropSampleColor ?? motoFillHex(settings))
+      : motoFillHex(settings)
   const roundedCornerMask = settings.roundedCornerMaskEnabled === true
 
   const touchHandlers = useProjectionMultiTouch(

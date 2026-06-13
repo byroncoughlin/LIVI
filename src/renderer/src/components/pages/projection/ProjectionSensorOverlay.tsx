@@ -4,7 +4,12 @@ import { useLiviStore } from '@store/store'
 import * as React from 'react'
 import { useLocation } from 'react-router'
 import { MOTO_CLEAR_GRAPH_HISTORY_EVENT } from './motoGraphEvents'
-import { MOTO_ARC_PCT, MOTO_SQUARE_PCT } from './motoLayout'
+import {
+  MOTO_ARC_PCT,
+  MOTO_CENTER_CORNER_RADIUS_PX,
+  MOTO_GRAPH_OVERLAY_OVERSCAN_PX,
+  MOTO_SQUARE_PCT
+} from './motoLayout'
 
 type MetricKey =
   | 'speed'
@@ -2309,15 +2314,15 @@ function MetricGraph({
       data-testid="projection-metric-graph"
       style={{
         position: 'absolute',
-        top: ARC_PCT,
-        left: ARC_PCT,
-        width: SQUARE_PCT,
-        height: SQUARE_PCT,
+        top: `calc(${ARC_PCT} - ${MOTO_GRAPH_OVERLAY_OVERSCAN_PX}px)`,
+        left: `calc(${ARC_PCT} - ${MOTO_GRAPH_OVERLAY_OVERSCAN_PX}px)`,
+        width: `calc(${SQUARE_PCT} + ${MOTO_GRAPH_OVERLAY_OVERSCAN_PX * 2}px)`,
+        height: `calc(${SQUARE_PCT} + ${MOTO_GRAPH_OVERLAY_OVERSCAN_PX * 2}px)`,
         background: '#000',
         zIndex: 20,
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: 34,
+        borderRadius: MOTO_CENTER_CORNER_RADIUS_PX + MOTO_GRAPH_OVERLAY_OVERSCAN_PX,
         overflow: 'hidden',
         userSelect: 'none',
         pointerEvents: 'auto'
@@ -2894,10 +2899,15 @@ const closeBtn: React.CSSProperties = {
 
 export function ProjectionSensorOverlay() {
   const settings = useLiviStore((s) => s.settings)
+  const backdropSampleColor = useLiviStore((s) => s.backdropSampleColor)
   const { pathname } = useLocation()
   const motoSettings = settings as MotoSettings | null
   const { telemetry, activeGraph, dataRef, actions } = useMotoTelemetry(motoSettings)
-  const arcBackground = motoSettings ? (motoFillHex(motoSettings) ?? 'transparent') : 'transparent'
+  const arcBackground = motoSettings
+    ? ((motoSettings.backdropEnabled === true
+        ? (backdropSampleColor ?? motoFillHex(motoSettings))
+        : motoFillHex(motoSettings)) ?? 'transparent')
+    : 'transparent'
 
   React.useEffect(() => {
     if (pathname !== '/') actions.closeMetric()
