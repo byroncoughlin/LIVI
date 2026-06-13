@@ -106,13 +106,11 @@ UTC on the first valid fix if the clock is badly wrong. See
 
 The old prototype had one crowded settings panel with stream fields, audio
 toggles, kiosk mode, sample-data toggles, and bindings all mixed together. The
-LIVI motorcycle build is deliberately smaller. The Settings root has two
-sections:
+LIVI motorcycle build is deliberately smaller. Its active Settings surface is
+split into **System** and **Moto Display**.
 
 <p align="center">
-  <img src="documentation/images/settings-root.png" alt="LIVI MotoCarPlay settings root" width="42%" />
-  &emsp;
-  <img src="documentation/images/settings-system.png" alt="LIVI MotoCarPlay system settings" width="42%" />
+  <img src="documentation/images/settings-system.png" alt="LIVI MotoCarPlay system settings" width="48%" />
 </p>
 
 ### System
