@@ -1124,7 +1124,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
     settings.backdropEnabled === true && !blurBackdropActive
       ? (backdropSampleColor ?? motoFillHex(settings))
       : motoFillHex(settings)
-  const roundedCornerMask = settings.roundedCornerMaskEnabled === true
+  const roundedCornerMask = settings.roundedCornerMaskEnabled === true && !blurBackdropActive
 
   const touchHandlers = useProjectionMultiTouch(
     videoContainerRef,

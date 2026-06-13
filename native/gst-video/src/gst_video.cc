@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
+#include <cmath>
 #include <initializer_list>
 #include <string>
 #ifdef __linux__
@@ -533,6 +534,84 @@ static GstPadProbeReturn dynamic_backdrop_gate_probe(GstPad*, GstPadProbeInfo* i
   return GST_PAD_PROBE_OK;
 }
 
+static constexpr int kDynamicBackdropCornerRadiusPx = 38;
+
+static void mask_rounded_corner_pixel(guint8* base, int stride, int x, int y, double cx,
+    double cy, double radius) {
+  double dx = (static_cast<double>(x) + 0.5) - cx;
+  double dy = (static_cast<double>(y) + 0.5) - cy;
+  double dist = std::sqrt(dx * dx + dy * dy);
+  double coverage = radius + 0.5 - dist;
+  guint8* alpha = base + static_cast<gsize>(y) * static_cast<gsize>(stride) +
+      static_cast<gsize>(x) * 4 + 3;
+  if (coverage <= 0.0) {
+    *alpha = 0;
+  } else if (coverage < 1.0) {
+    *alpha = static_cast<guint8>(std::round(static_cast<double>(*alpha) * coverage));
+  }
+}
+
+static void apply_rounded_foreground_mask(GstMapInfo* map, const GstVideoInfo* info) {
+  int width = GST_VIDEO_INFO_WIDTH(info);
+  int height = GST_VIDEO_INFO_HEIGHT(info);
+  int stride = GST_VIDEO_INFO_PLANE_STRIDE(info, 0);
+  if (!map || !map->data || width <= 1 || height <= 1 || stride < width * 4) return;
+
+  int radius = clamp_i(kDynamicBackdropCornerRadiusPx, 1, std::min(width, height) / 2);
+  double r = static_cast<double>(radius);
+  double left_cx = r;
+  double right_cx = static_cast<double>(width) - r;
+  double top_cy = r;
+  double bottom_cy = static_cast<double>(height) - r;
+
+  int right_start = std::max(0, width - radius);
+  int bottom_start = std::max(0, height - radius);
+  for (int y = 0; y < radius; y++) {
+    for (int x = 0; x < radius; x++) {
+      mask_rounded_corner_pixel(map->data, stride, x, y, left_cx, top_cy, r);
+    }
+    for (int x = right_start; x < width; x++) {
+      mask_rounded_corner_pixel(map->data, stride, x, y, right_cx, top_cy, r);
+    }
+  }
+  for (int y = bottom_start; y < height; y++) {
+    for (int x = 0; x < radius; x++) {
+      mask_rounded_corner_pixel(map->data, stride, x, y, left_cx, bottom_cy, r);
+    }
+    for (int x = right_start; x < width; x++) {
+      mask_rounded_corner_pixel(map->data, stride, x, y, right_cx, bottom_cy, r);
+    }
+  }
+}
+
+static GstPadProbeReturn rounded_foreground_mask_probe(GstPad* pad, GstPadProbeInfo* info,
+    gpointer) {
+  if (!(GST_PAD_PROBE_INFO_TYPE(info) & GST_PAD_PROBE_TYPE_BUFFER)) {
+    return GST_PAD_PROBE_OK;
+  }
+
+  GstBuffer* buffer = GST_PAD_PROBE_INFO_BUFFER(info);
+  if (!buffer) return GST_PAD_PROBE_OK;
+
+  GstCaps* caps = gst_pad_get_current_caps(pad);
+  GstVideoInfo video_info;
+  bool ok = caps && gst_video_info_from_caps(&video_info, caps) &&
+      GST_VIDEO_INFO_FORMAT(&video_info) == GST_VIDEO_FORMAT_BGRA;
+  if (caps) gst_caps_unref(caps);
+  if (!ok) return GST_PAD_PROBE_OK;
+
+  buffer = gst_buffer_make_writable(buffer);
+  GST_PAD_PROBE_INFO_DATA(info) = buffer;
+
+  GstMapInfo map;
+  if (gst_buffer_map(buffer, &map, GST_MAP_WRITE)) {
+    apply_rounded_foreground_mask(&map, &video_info);
+    gst_buffer_unmap(buffer, &map);
+  }
+
+  return GST_PAD_PROBE_OK;
+}
+
 static bool average_rgb_sample(GstSample* sample, GstMapInfo* map, guint8 rgb[3]) {
   if (!sample || !map || map->size < 3) return false;
 
@@ -641,6 +720,11 @@ static std::string dynamic_backdrop_pipeline_desc(const std::string& codec, cons
 
   std::string backdrop_zoom = crop_chain(zoom_l, zoom_t, zoom_l, zoom_t);
   std::string view_crop = crop_chain(vl, vt, vr, vb);
+  std::string foreground_mask;
+#ifdef __linux__
+  foreground_mask =
+    "videoconvert ! video/x-raw,format=BGRA ! identity name=round_mask silent=true ! ";
+#endif
 
   return "appsrc name=src is-live=true do-timestamp=true format=time"
     " min-latency=0 max-latency=0 caps=" +
@@ -676,7 +760,7 @@ static std::string dynamic_backdrop_pipeline_desc(const std::string& codec, cons
     ",height=" + std::to_string(dh) +
     " ! comp.sink_0"
     " t. ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream"
-    " ! " + view_crop +
+    " ! " + view_crop + foreground_mask +
     "comp.sink_1";
 }
 
@@ -773,6 +857,15 @@ static Player* livi_create_player(const std::string& codec, guintptr handle,
     }
   }
   if (blur_gate) gst_object_unref(blur_gate);
+  GstElement* round_mask = gst_bin_get_by_name(GST_BIN(pipeline), "round_mask");
+  if (round_mask && dynamic) {
+    GstPad* sp = gst_element_get_static_pad(round_mask, "src");
+    if (sp) {
+      gst_pad_add_probe(sp, GST_PAD_PROBE_TYPE_BUFFER, rounded_foreground_mask_probe, NULL, NULL);
+      gst_object_unref(sp);
+    }
+  }
+  if (round_mask) gst_object_unref(round_mask);
   if (p->sample_sink && sampled) {
     g_signal_connect(p->sample_sink, "new-sample", G_CALLBACK(sampled_backdrop_new_sample), p);
   }
