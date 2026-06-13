@@ -2315,6 +2315,36 @@ describe('ProjectionService', () => {
     expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
   })
 
+  test('backdrop starts new native main video players with live color sampling', () => {
+    const svc = new ProjectionService() as any
+    svc.webContents = { send: jest.fn(), isDestroyed: jest.fn(() => false) }
+    svc.config = {
+      ...svc.config,
+      projectionWidth: 800,
+      projectionHeight: 800,
+      projectionViewAreaTop: 118,
+      projectionViewAreaBottom: 118,
+      projectionViewAreaLeft: 118,
+      projectionViewAreaRight: 118,
+      backdropEnabled: true,
+      ambientFillEnabled: false
+    }
+
+    emitMainVideoFrame(svc)
+
+    expect(mockGstVideoConstructor).toHaveBeenCalledTimes(1)
+    expect(mockGstVideoInstances[0].args[3]).toMatchObject({
+      dynamicBackdrop: false,
+      sampledBackdrop: true,
+      displayWidth: 800,
+      displayHeight: 800,
+      viewAreaTop: 118,
+      viewAreaBottom: 118,
+      viewAreaLeft: 118,
+      viewAreaRight: 118
+    })
+  })
+
   test('sampled backdrop colors paint the compositor and renderer only while backdrop is enabled', () => {
     const svc = new ProjectionService() as any
     const send = jest.fn()

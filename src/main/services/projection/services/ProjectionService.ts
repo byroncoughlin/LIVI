@@ -310,9 +310,9 @@ export class ProjectionService {
   private mainGstVideoOptions(cfg: Config = this.config): GstVideoOptions {
     return {
       dynamicBackdrop: false,
-      // Keep the live CarPlay plane on the normal low-latency path. Recreating the native
-      // player to add a sampled backdrop branch can strand the video plane black mid-session.
-      sampledBackdrop: false,
+      // Use the live sampled-color branch only when a native player is being created.
+      // Toggling backdrop must not recreate the active CarPlay plane mid-session.
+      sampledBackdrop: cfg.backdropEnabled === true,
       onBackdropColor: (hex) => this.applySampledBackdropColor(hex),
       displayWidth: cfg.projectionWidth ?? 0,
       displayHeight: cfg.projectionHeight ?? 0,
@@ -327,7 +327,6 @@ export class ProjectionService {
     const opts = this.mainGstVideoOptions(cfg)
     return [
       opts.dynamicBackdrop === true ? 1 : 0,
-      opts.sampledBackdrop === true ? 1 : 0,
       opts.displayWidth ?? 0,
       opts.displayHeight ?? 0,
       opts.viewAreaTop ?? 0,
