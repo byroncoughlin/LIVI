@@ -8,103 +8,145 @@
 
 # LIVI - MotoCarPlay v2
 
-**A hardware-accelerated round-display Apple CarPlay dashboard with live
-motorcycle instrumentation, built for a 1975 BMW R75/6.**
+**A LIVI-based round-display Apple CarPlay dashboard with live motorcycle
+instrumentation, built for a 1975 BMW R75/6.**
 
-**Try the live browser demo -> [byronthegreat.com/projects/motocarplay](https://byronthegreat.com/projects/motocarplay/)**
-_(the dashboard UI running in your browser, driven by a simulated ride; the
-center CarPlay screen is a static screenshot)_
+**Try the browser demo -> [byronthegreat.com/projects/motocarplay](https://byronthegreat.com/projects/motocarplay/)**
+_(the demo tells the project story and simulates the dash in a browser; the
+motorcycle build in this repo is the LIVI/Raspberry Pi app)_
 
-> **Current version:** this repo is my LIVI-based MotoCarPlay v2 build. The
-> original prototype lives in
-> [byroncoughlin/round-carplay](https://github.com/byroncoughlin/round-carplay),
-> where I first adapted the round-screen idea for the motorcycle dash. This
-> version ports that work onto LIVI's modern Raspberry Pi foundation: native
-> GStreamer video, an embedded Linux compositor, cleaner restarts, hardware-aware
-> rendering, and the same round BMW airhead instrument cluster.
+This is the version I am carrying forward on the bike. The first MotoCarPlay
+prototype proved the round dashboard in
+[byroncoughlin/round-carplay](https://github.com/byroncoughlin/round-carplay).
+This repo ports that idea onto [LIVI](https://github.com/f-io/LIVI): native
+GStreamer projection, an embedded Linux compositor, a cleaner Pi app lifecycle,
+and a settings surface reduced to the controls that matter on the motorcycle.
 
-CarPlay runs in a centered square on an 800x800 round screen. The curved space
-around it shows sensor data read straight off the bike: cylinder-head temps,
-lean/pitch/G, GPS speed and heading, altitude, ambient temperature, and Pi CPU
-temperature. The optional backdrop lets CarPlay color bleed out to the bezel,
-either as an average sampled color or as a blurred, enlarged glow.
+CarPlay runs in the largest square that fits inside an 800x800 round Waveshare
+display. The curved space around it becomes the instrument cluster: speed,
+heading, altitude, ambient temperature, cylinder-head temperature on both jugs,
+lean, pitch, G-force, GPS diagnostics, and Pi CPU temperature.
 
 <p align="center">
-  <img src="documentation/images/dashboard.png" alt="MotoCarPlay dashboard" width="48%" />
+  <img src="documentation/images/dashboard.png" alt="LIVI MotoCarPlay dashboard" width="48%" />
 </p>
 
-> Photo note: on-bike photos of the display mounted in the R75/6 dash are still
-> coming. The screenshots here are the live dash UI.
-<!-- Add real mounted/riding photos here, e.g. documentation/images/bike-01.jpg -->
-
-> **This is a personal build with visible lineage.** LIVI provides the current
-> head-unit foundation. My earlier MotoCarPlay prototype started as a hard fork
-> of [OneMakerShow/round-carplay](https://github.com/OneMakerShow/round-carplay),
-> itself based on [f-io/pi-carplay](https://github.com/f-io/pi-carplay). The
-> motorcycle instrumentation is my rebuild for an old BMW with no OBD/CAN bus:
-> every reading comes from a sensor wired to the Pi.
+> The screenshots in this README are from the LIVI/MotoCarPlay v2 Pi build, not
+> the old round-carplay prototype.
 
 ---
 
 ## What it does
 
-### CarPlay, centered in the circle
+### CarPlay in a round screen
 
-Wireless CarPlay, via a Carlinkit adapter, renders in an 800x800 LIVI projection
-surface with the view area inset to create the largest clean square inside the
-round Waveshare panel. The result is the familiar CarPlay card in the middle and
-four curved pockets around it for the motorcycle:
+The phone sees an 800x800 CarPlay surface. LIVI then uses a 118 px view-area
+inset on each side so the visible CarPlay card lands as a 565x565 square inside
+the round display. The overlay treats the remaining curved bands as motorcycle
+gauges.
 
-| Arc | Shows |
+| Area | What it shows |
 |---|---|
 | **Top** | Compass heading, GPS speed, ambient temperature |
 | **Bottom** | Altitude, lean-angle inclinometer, pitch, G-force |
-| **Left / Right** | Cylinder-head temperature, one bar gauge per jug, color-coded by heat |
+| **Left / Right** | Cylinder-head temperature, one bar gauge per side |
+| **Center** | CarPlay from the adapter, rounded to match the dash |
 
-### Optional ambient backdrop
+### Live instrumentation
 
-The original prototype used a blurred, enlarged copy of the CarPlay frame to
-hide the square-in-a-circle problem. LIVI - MotoCarPlay v2 keeps that idea, but
-makes it an explicit opt-in setting.
+The R75/6 has no OBD port or CAN bus, so the dash learns the bike through
+standalone sensors wired to the Pi. GPS supplies speed, heading, altitude, fix
+state, satellite count, HDOP, and sky-view diagnostics. Thermocouples under the
+spark plugs watch the two cylinder heads. A BNO055 IMU provides lean, pitch, and
+G-force. A waterproof DS18B20 reads ambient air, and the Pi reports its own CPU
+temperature from inside the enclosure.
 
-| Mode | What it does |
-|---|---|
-| **Off** | Plain normal LIVI rendering. No sampling or backdrop work. |
-| **Average Color** | Samples the live CarPlay frame and fills the round edges with a smoothed average color. |
-| **Blur Glow** | Samples the live CarPlay frame, enlarges it, blurs it, and lets the color spill into the bezel. |
+### Tap-to-graph history
 
-The backdrop is there for the round-screen look, not as a requirement. I keep it
-disabled when I want the lightest possible head-unit mode.
-
-### Live graphing with risk zones
-
-Tap any metric to open a full-screen graph over the CarPlay card: a big live
-number, rolling **MIN / MAX**, a **RESET**, and a scrollable history. Graphs that
-matter for engine/board health get **color risk bands** painted under the trace:
-
-| Metric | Bands |
-|---|---|
-| **Cylinder-head temp** | cold (blue) -> normal (green) -> warm (amber) -> hot (red) |
-| **Pi CPU temp** | healthy (green) -> warm (amber) -> throttle (red) |
-
-Tap the **ambient** reading and the screen splits into a dual graph: ambient on
-top, Pi CPU temperature below. The Pi runs in a sealed case, so the CPU trace
-shows thermal headroom at a glance.
+Tap a metric and the center CarPlay card becomes a live graph. The graph view
+keeps the surrounding motorcycle context visible, shows current value plus
+rolling min/max, and lets me reset either the graph window or a peak value.
+Thermal graphs get risk-color bands so heat reads as a pattern instead of just a
+number.
 
 <p align="center">
-  <img src="documentation/images/graph-split.png" alt="Ambient and Pi CPU split graph" width="32%" />
+  <img src="documentation/images/graph-ambient.png" alt="Ambient and Pi CPU graph in LIVI MotoCarPlay" width="30%" />
   &emsp;
-  <img src="documentation/images/graph-cht.png" alt="Cylinder-head temp graph with risk band" width="32%" />
+  <img src="documentation/images/graph-cht.png" alt="Cylinder-head temp graph in LIVI MotoCarPlay" width="30%" />
+  &emsp;
+  <img src="documentation/images/graph-gps.png" alt="GPS diagnostics graph in LIVI MotoCarPlay" width="30%" />
 </p>
 
-### Keeps the right time without WiFi
+### Optional backdrop
 
-A Pi has no clock when it is powered off. Two things fix that. The Pi 5 RTC
-battery holds the time across power-off, so the clock is right at boot with no
-network. As a backup, `gps.py` sets the system clock from GPS UTC on the first
-valid fix when the time is badly off, so the dash stays correct even after days
-with no cell or WiFi. See
-[`PI_SETUP.md`](PI_SETUP.md#gps-clock-set-no-wifi-time-fix) for details.
+The square-in-a-circle problem is still real: black corners make the CarPlay
+window feel like a separate screen. MotoCarPlay v2 keeps backdrop as an explicit
+opt-in because I want normal mode to stay as light as possible.
+
+| Mode | Current behavior |
+|---|---|
+| **Off** | Normal LIVI video path. No backdrop sampling, blur branch, or renderer fill work. |
+| **Average Color** | GStreamer crops the visible CarPlay frame, downsamples it to a 32x32 RGB grid, averages every pixel in C++, and sends a color only when the change is visible. |
+| **Blur Glow** | GStreamer builds a native backdrop branch: crop, shrink, blur, and upscale the live frame behind the foreground CarPlay card. |
+| **Ambient Fill** | Uses a fixed color instead of a sampled/dynamic CarPlay backdrop. |
+
+The fallback is intentionally boring: if a backdrop pipeline cannot be built,
+the app falls back to the normal projection pipeline.
+
+### Time without WiFi
+
+A Pi has no reliable clock after power-off unless it has help. The Pi 5 RTC
+battery keeps time across shutdowns, and `gps.py` can set system time from GPS
+UTC on the first valid fix if the clock is badly wrong. See
+[`PI_SETUP.md`](PI_SETUP.md#gps-clock-set-no-wifi-time-fix).
+
+---
+
+## Current Settings
+
+The old prototype had one crowded settings panel with stream fields, audio
+toggles, kiosk mode, sample-data toggles, and bindings all mixed together. The
+LIVI motorcycle build is deliberately smaller. The Settings root has two
+sections:
+
+<p align="center">
+  <img src="documentation/images/settings-root.png" alt="LIVI MotoCarPlay settings root" width="42%" />
+  &emsp;
+  <img src="documentation/images/settings-system.png" alt="LIVI MotoCarPlay system settings" width="42%" />
+</p>
+
+### System
+
+These are the connection and projection controls I actually use on the bike.
+
+| Setting | Typical | What it does |
+|---|---|---|
+| **Wi-Fi Frequency** | 5 GHz | Chooses the dongle wireless band for CarPlay. |
+| **Auto Connect** | On | Lets LIVI bring the adapter/phone session back automatically. |
+| **Preferred Connection** | Dongle | Keeps the Carlinkit path preferred over native/auto transport choices. |
+| **FPS** | 45 | Projection frame rate requested from the phone. Lower than 60 keeps the Pi calmer. |
+| **DPI** | 140 | CarPlay UI density hint. |
+| **View Area** | 118 px each side | Insets the 800x800 stream so CarPlay fits the round display as a 565x565 card. |
+| **USB Dongle Info** | - | Live adapter/protocol/status details for debugging the Carlinkit connection. |
+| **About** | - | App/version/about information. |
+
+### Moto Display
+
+This section controls the motorcycle-specific layer around CarPlay.
+
+| Control | What it does |
+|---|---|
+| **Backdrop** | Completely enables/disables CarPlay-derived backdrop work. Off means the regular no-backdrop mode stays on the normal projection path. |
+| **Backdrop Style** | Chooses **Average Color** or **Blur Glow** when backdrop is enabled. |
+| **Ambient Fill** | Uses a fixed fill color around the CarPlay card. |
+| **Fill Color** | Picks the fixed ambient fill color. |
+| **Round Corners** | Applies the mask that keeps the CarPlay card visually rounded. |
+| **Tilt Calibration** | Stores lean/pitch offsets with the bike sitting level. |
+| **Graph History** | Clears the rolling graph samples. |
+
+Projection/backdrop mode changes are treated as app-lifecycle changes. When I
+save one, the settings window closes and the app relaunches cleanly instead of
+waiting on a partial adapter reset.
 
 ---
 
@@ -167,115 +209,65 @@ order). Excludes the 3D-printed enclosure and the iPhone you already own.
 > - The **BNO055 runs over UART, not I2C**. I had trouble with it on I2C.
 >   Details live in `sensors/imu.py`.
 > - The Waveshare panel is **HDMI**, so the Pi 5's micro-HDMI is adapted to it.
->   That's the little stack of HDMI adapters above.
 
 ---
 
-## Instrument wiring & Pi setup
+## Wiring & Pi setup
 
-Full reproduce-from-a-fresh-flash instructions live in
-**[`PI_SETUP.md`](PI_SETUP.md)**: `config.txt` overlays, sensor wiring pinouts,
-udev rules, the systemd user services, and the gotchas learned the hard way.
-
-Sensor scripts (`sensors/*.py`) each document their exact wiring in the file
-header. Quick map:
+Full reproduce-from-a-fresh-flash notes live in **[`PI_SETUP.md`](PI_SETUP.md)**:
+`config.txt` overlays, sensor wiring pinouts, udev rules, systemd user services,
+and the gotchas learned the hard way.
 
 | Sensor | Script | Bus |
 |---|---|---|
-| BNO055 IMU (lean/pitch/G) | `imu.py` | UART `/dev/ttyAMA0` |
-| CHT left/right (MAX31856 x2) | `cht_temp.py` | SPI0 (CE0 = left, CE1 = right) |
-| Ambient (DS18B20) | `ambient_temp.py` | 1-Wire (GPIO4) |
-| GPS (Adafruit Ultimate, USB) | `gps.py` | USB serial `/dev/gps` |
-| Pi CPU temp | `pi_temp.py` | `/sys/class/thermal` (no wiring) |
+| BNO055 IMU (lean/pitch/G) | `sensors/imu.py` | UART `/dev/ttyAMA0` |
+| CHT left/right (MAX31856 x2) | `sensors/cht_temp.py` | SPI0 (CE0 = left, CE1 = right) |
+| Ambient (DS18B20) | `sensors/ambient_temp.py` | 1-Wire (GPIO4) |
+| GPS (Adafruit Ultimate, USB) | `sensors/gps.py` | USB serial `/dev/gps` |
+| Pi CPU temp | `sensors/pi_temp.py` | `/sys/class/thermal` |
 
-For the full physical pin map, see **[`WIRING.md`](WIRING.md)**.
+For the physical 40-pin header map, see **[`WIRING.md`](WIRING.md)**.
 
 ---
 
-## Build & deploy the app
+## Build & deploy
 
-This repo is the current LIVI-based app. The browser demo remains at
-byronthegreat.com, but the motorcycle build is the arm64 AppImage from this
-repository.
-
-### Prerequisites
-
-- Node and **pnpm 11.x** (the repo declares `pnpm@11.5.3`)
-- Linux build dependencies for Electron, native USB modules, and the LIVI
-  compositor/GStreamer packaging scripts
-- FUSE/AppImage support on the target Pi
-
-### Build the arm64 AppImage
+This repo builds the current LIVI-based motorcycle app.
 
 ```bash
 pnpm run install:ci
-pnpm run build:armLinux:appimage  # -> dist/LIVI-*-linux-arm64.AppImage
+pnpm run build:armLinux:appimage
 ```
 
-### Deploy to the Pi
+That produces an arm64 AppImage under `dist/`, named like:
 
-```bash
-rsync -az --progress dist/LIVI-*-linux-arm64.AppImage \
-  byron@motocarplay.local:/home/byron/LIVI/LIVI.AppImage
+```text
+LIVI-*-linux-arm64.AppImage
 ```
 
-The Pi autostarts the AppImage on boot; the sensor scripts run as systemd user
-services. The app and the Python sensors talk over a local Socket.IO channel.
+My Pi autostart target is:
+
+```text
+/home/byron/LIVI/LIVI.AppImage
+```
+
+The app runs the projection/compositor side. The Python sensor scripts run as
+systemd user services and send readings to LIVI over local Socket.IO.
 
 ---
-
-## Settings reference
-
-Open Settings via the tuning icon. Projection/video changes and Moto Display
-mode changes can trigger a clean relaunch so the compositor and CarPlay session
-come back in the correct mode.
-
-<p align="center">
-  <img src="documentation/images/settings.png" alt="Settings" width="40%" />
-  &emsp;
-  <img src="documentation/images/info.png" alt="Info and dongle status" width="40%" />
-</p>
-
-### System
-
-| Setting | Typical | What it does |
-|---|---|---|
-| **Wi-Fi Frequency** | 5 GHz | Band the dongle uses for wireless CarPlay. |
-| **Auto Connect** | On | Reconnects to the preferred transport automatically. |
-| **Preferred Connection** | Dongle | Chooses dongle, native, or automatic transport behavior. |
-| **FPS** | 45 | Frames per second requested for the projection stream. |
-| **DPI** | 140 | UI scaling hint to the phone. Higher = denser. |
-| **View Area** | 118 px per side | Insets the 800x800 stream so CarPlay sits inside the round screen. |
-| **USB Dongle Info** | - | Shows dongle identity and connection state. |
-| **About** | - | LIVI/app information. |
-
-### Moto Display
-
-| Control | What it does |
-|---|---|
-| **Backdrop** | Enables/disables the optional ambient backdrop completely. |
-| **Backdrop Style** | Switches between **Average Color** and **Blur Glow**. |
-| **Ambient Fill** | Uses a fixed fill color around the CarPlay card. |
-| **Fill Color** | Chooses that fixed ambient fill color. |
-| **Round Corners** | Applies the mask that keeps the CarPlay card visually rounded. |
-| **Tilt Calibration** | Zeroes the lean/pitch readout with the bike sitting level. |
-| **Graph History** | Clears the rolling graph data. |
-
----
-
-## Disclaimer
-
-_Apple and CarPlay are trademarks of Apple Inc. This project is not affiliated
-with or endorsed by Apple. All trademarks are the property of their respective
-owners. Mounting a screen on a motorcycle and reading it while riding is done at
-your own risk. Keep your eyes on the road._
 
 ## Credits
+
+This is a personal build, but it sits on a lot of prior work:
 
 - Current head-unit foundation: [f-io/LIVI](https://github.com/f-io/LIVI)
 - Original Raspberry Pi CarPlay work: [f-io/pi-carplay](https://github.com/f-io/pi-carplay)
 - Round-screen CarPlay prototype base: [OneMakerShow/round-carplay](https://github.com/OneMakerShow/round-carplay)
 - MotoCarPlay v1 prototype/story/demo: [byroncoughlin/round-carplay](https://github.com/byroncoughlin/round-carplay)
+
+Apple and CarPlay are trademarks of Apple Inc. This project is not affiliated
+with or endorsed by Apple. Mounting a screen on a motorcycle and reading it
+while riding is done at your own risk. Keep your eyes on the road.
 
 ## License
 
