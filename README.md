@@ -199,8 +199,7 @@ or a search link for the same part family when the original listing was generic.
 | Micro-HDMI adapter | Micro-HDMI M -> HDMI F 180-degree angled (2-pack, used 1) | 1 | $9.99 | [search](https://www.amazon.com/s?k=micro+HDMI+male+to+HDMI+female+180+degree+adapter) |
 | USB-C -> USB-A cable | Amazon Basics, 6 ft | 1 | $2.82 | [search](https://www.amazon.com/s?k=Amazon+Basics+USB+C+to+USB+A+6+ft+cable) |
 
-**Parts subtotal: about $544** (+ $13.84 Adafruit shipping & tax on the GPS
-order). Excludes the 3D-printed enclosure and the iPhone you already own.
+**Parts subtotal: about $544**
 
 > **Why these specific parts:**
 > - The R75/6 takes **14 mm** spark plugs, so the thermocouple washers are 14 mm.
