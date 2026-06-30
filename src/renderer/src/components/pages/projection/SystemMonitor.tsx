@@ -15,6 +15,26 @@ const formatUptime = (seconds: number): string => {
   return `${minutes}m`
 }
 
+const formatStorage = (mb: number): string => {
+  if (mb >= 10240) return `${Math.round(mb / 1024)} GB`
+  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`
+  return `${mb} MB`
+}
+
+const formatDisk = (stats: SystemStats): string => {
+  if (stats.diskFreeMb == null) return '--'
+  if (stats.diskTotalMb == null || stats.diskTotalMb <= 0)
+    return `${formatStorage(stats.diskFreeMb)} free`
+
+  const freePct = Math.round((stats.diskFreeMb / stats.diskTotalMb) * 100)
+  return `${formatStorage(stats.diskFreeMb)} / ${formatStorage(stats.diskTotalMb)} - ${freePct}% free`
+}
+
+const formatLoad = (load: number[] | null | undefined): string => {
+  if (!load || load.length < 3) return '--'
+  return `1m ${load[0].toFixed(2)} 5m ${load[1].toFixed(2)} 15m ${load[2].toFixed(2)}`
+}
+
 const statRow = (label: string, value: string, color?: string): React.ReactElement => (
   <div
     style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}
@@ -249,6 +269,11 @@ export function SystemMonitor(): React.ReactElement | null {
               stats.memPct != null ? heat(stats.memPct, 75, 90) : undefined
             )}
             {statRow(
+              'DISK',
+              formatDisk(stats),
+              stats.diskPct != null ? heat(stats.diskPct, 80, 92) : undefined
+            )}
+            {statRow(
               'SWAP',
               stats.swapUsedMb != null ? `${stats.swapUsedMb} MB` : '--',
               stats.swapUsedMb != null && stats.swapUsedMb > 80 ? '#ffca28' : undefined
@@ -258,10 +283,7 @@ export function SystemMonitor(): React.ReactElement | null {
               stats.tempC != null ? `${stats.tempC.toFixed(1)}\u00b0C` : '--',
               stats.tempC != null ? heat(stats.tempC, 70, 80) : undefined
             )}
-            {statRow(
-              'LOAD',
-              stats.load ? stats.load.map((load) => load.toFixed(2)).join(' ') : '--'
-            )}
+            {statRow('LOAD AVG', formatLoad(stats.load))}
             {statRow('UPTIME', stats.uptime != null ? formatUptime(stats.uptime) : '--')}
           </div>
         )}

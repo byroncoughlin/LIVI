@@ -193,8 +193,8 @@ describe('App', () => {
     const frame = document.getElementById('round-host-frame')
     expect(frame).toBeInTheDocument()
     expect(frame).toHaveStyle({
-      width: 'min(565px, 100%)',
-      height: 'min(565px, 100%)',
+      width: 'min(586px, 100%)',
+      height: 'min(586px, 100%)',
       overflow: 'hidden'
     })
     expect(screen.getByTestId('routes').parentElement).toBe(frame)
@@ -208,6 +208,9 @@ describe('App', () => {
       memUsedMb: 900,
       memTotalMb: 2000,
       memPct: 45,
+      diskFreeMb: 16384,
+      diskTotalMb: 29696,
+      diskPct: 45,
       swapUsedMb: 0,
       tempC: 41,
       load: [0.8, 0.4, 0.2],
@@ -225,6 +228,8 @@ describe('App', () => {
     })
 
     expect(screen.getByTestId('projection-system-monitor')).toBeInTheDocument()
+    expect(screen.getByText('16 GB / 29 GB - 55% free')).toBeInTheDocument()
+    expect(screen.getByText('1m 0.80 5m 0.40 15m 0.20')).toBeInTheDocument()
     expect(systemStats).toHaveBeenCalledTimes(1)
 
     fireEvent.pointerDown(screen.getByLabelText('Close Pi monitor'))

@@ -36,19 +36,28 @@ describe('systemStats', () => {
       if (path === '/proc/uptime') return '1234.5 99.0\n'
       throw new Error(`unexpected path ${path}`)
     })
+    const statfs = jest.fn().mockReturnValue({
+      bsize: 4096,
+      blocks: 1024000,
+      bavail: 256000
+    })
     const sleep = jest.fn().mockResolvedValue(undefined)
 
-    await expect(readSystemStats({ readText, sleep, sampleMs: 0 })).resolves.toEqual({
+    await expect(readSystemStats({ readText, statfs, sleep, sampleMs: 0 })).resolves.toEqual({
       cpu: 50,
       cores: [33, 20],
       memUsedMb: 1000,
       memTotalMb: 2000,
       memPct: 50,
+      diskFreeMb: 1000,
+      diskTotalMb: 4000,
+      diskPct: 75,
       swapUsedMb: 256,
       tempC: 45.7,
       load: [1, 0.5, 0.25],
       uptime: 1235
     })
+    expect(statfs).toHaveBeenCalledWith('/')
     expect(sleep).toHaveBeenCalledWith(0)
   })
 
@@ -60,13 +69,23 @@ describe('systemStats', () => {
     })
 
     await expect(
-      readSystemStats({ readText, sleep: jest.fn().mockResolvedValue(undefined), sampleMs: 0 })
+      readSystemStats({
+        readText,
+        statfs: jest.fn(() => {
+          throw new Error('missing statfs')
+        }),
+        sleep: jest.fn().mockResolvedValue(undefined),
+        sampleMs: 0
+      })
     ).resolves.toMatchObject({
       cpu: 0,
       cores: [],
       memUsedMb: null,
       memTotalMb: 1,
       memPct: null,
+      diskFreeMb: null,
+      diskTotalMb: null,
+      diskPct: null,
       swapUsedMb: null,
       tempC: null,
       load: null,

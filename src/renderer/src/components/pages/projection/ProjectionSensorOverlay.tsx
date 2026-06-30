@@ -1,12 +1,15 @@
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined'
 import type { Config, TelemetryPayload } from '@shared/types'
 import { motoFillHex } from '@shared/utils'
 import { useLiviStore } from '@store/store'
 import * as React from 'react'
-import { useLocation } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import { MOTO_CLEAR_GRAPH_HISTORY_EVENT } from './motoGraphEvents'
 import {
   MOTO_ARC_PCT,
+  MOTO_ARC_STRIP_SIZE,
   MOTO_CENTER_CORNER_RADIUS_PX,
+  MOTO_CENTER_SQUARE_SIZE,
   MOTO_SQUARE_PCT
 } from './motoLayout'
 
@@ -674,6 +677,7 @@ function TopArc({
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    boxSizing: 'border-box',
     cursor: 'pointer',
     userSelect: 'none'
   }
@@ -733,9 +737,9 @@ function TopArc({
         onClick={() => actions.openMetric('heading')}
         style={{
           ...bandBase,
-          left: 10,
-          width: '30%',
-          paddingBottom: 1,
+          left: 88,
+          width: '20%',
+          paddingBottom: 14,
           border: 0,
           background: 'transparent'
         }}
@@ -754,8 +758,9 @@ function TopArc({
         onClick={() => actions.openMetric('speed')}
         style={{
           ...bandBase,
-          left: '30%',
-          right: '30%',
+          left: '32%',
+          right: '32%',
+          paddingBottom: telemetry.gpsFix === true ? 4 : 0,
           border: 0,
           background: 'transparent'
         }}
@@ -767,7 +772,7 @@ function TopArc({
             color: 'white',
             lineHeight: 1,
             letterSpacing: 0,
-            marginBottom: -9,
+            marginBottom: -7,
             fontVariantNumeric: 'tabular-nums'
           }}
         >
@@ -791,9 +796,9 @@ function TopArc({
         onClick={() => actions.openMetric('ambientTemp')}
         style={{
           ...bandBase,
-          right: 10,
-          width: '30%',
-          paddingBottom: 1,
+          right: 88,
+          width: '20%',
+          paddingBottom: 14,
           border: 0,
           background: 'transparent'
         }}
@@ -821,17 +826,18 @@ function ChtGauge({
   background: string
 }) {
   const maxTemp = 300
-  const barW = 68
-  const vw = 110
-  const barH = 290
-  const barY = 120
-  const vh = 530
+  const barW = 72
+  const vw = MOTO_ARC_STRIP_SIZE
+  const barH = 268
+  const barY = 159
+  const vh = MOTO_CENTER_SQUARE_SIZE
   const metricKey = side === 'L' ? 'chtLeft' : 'chtRight'
   const hasData = value !== null
   const clamped = Math.max(0, Math.min(maxTemp, value ?? 0))
   const fill = (clamped / maxTemp) * barH
   const color = hasData ? tempColor(clamped) : '#333'
-  const barX = side === 'L' ? vw - barW - 6 : 6
+  const barInset = 29
+  const barX = side === 'L' ? barInset : vw - barW - barInset
   const textCX = barX + barW / 2
 
   return (
@@ -856,7 +862,7 @@ function ChtGauge({
         width="100%"
         height="100%"
         style={{ display: 'block' }}
-        preserveAspectRatio={side === 'L' ? 'xMaxYMid meet' : 'xMinYMid meet'}
+        preserveAspectRatio="xMidYMid meet"
       >
         <rect x={barX} y={barY} width={barW} height={barH} fill="#141414" rx={6} />
         {hasData && fill > 0 && (
@@ -915,8 +921,8 @@ function BottomArc({
   background: string
 }) {
   const clipId = useSvgId('bottom-arc')
-  const w = 565
-  const h = 117
+  const w = MOTO_CENTER_SQUARE_SIZE
+  const h = MOTO_ARC_STRIP_SIZE
   const cx = w / 2
   const pitchScale = 2.5
   const refY = h / 2
@@ -1050,13 +1056,13 @@ function BottomArc({
           strokeWidth={3.5}
           strokeLinecap="round"
         />
-        <rect x={cx - 30} y={refY - 13} width={60} height={26} fill="rgba(0,0,0,0.88)" rx={8} />
+        <rect x={cx - 27} y={34} width={54} height={24} fill="rgba(0,0,0,0.88)" rx={8} />
         <text
           x={cx}
-          y={refY + 7}
+          y={52}
           textAnchor="middle"
           fill={telemetry.pitchDeg != null ? ref : 'white'}
-          fontSize={20}
+          fontSize={18}
           fontWeight="bold"
           fontFamily="monospace"
         >
@@ -1066,13 +1072,13 @@ function BottomArc({
               : `${pitchDir}${absPitch}\u00b0`
             : '--'}
         </text>
-        <rect x={0} y={66} width={w} height={h - 66} fill="rgba(0,0,0,0.25)" />
+        <rect x={0} y={60} width={w} height={h - 60} fill="rgba(0,0,0,0.25)" />
 
         <g>
-          <rect x={84} y={6} width={78} height={58} fill="rgba(0,0,0,0.72)" rx={5} />
+          <rect x={110} y={5} width={88} height={53} fill="rgba(0,0,0,0.72)" rx={5} />
           <text
-            x={123}
-            y={22}
+            x={154}
+            y={20}
             textAnchor="middle"
             fill="rgba(255,255,255,0.75)"
             fontSize={12}
@@ -1083,19 +1089,19 @@ function BottomArc({
             ALT
           </text>
           <text
-            x={123}
-            y={48}
+            x={154}
+            y={43}
             textAnchor="middle"
             fill={telemetry.altitudeFt != null ? '#e0e0e0' : 'white'}
-            fontSize={24}
+            fontSize={22}
             fontWeight="bold"
             fontFamily="monospace"
           >
             {altFt}
           </text>
           <text
-            x={123}
-            y={59}
+            x={154}
+            y={54}
             textAnchor="middle"
             fill="rgba(255,255,255,0.7)"
             fontSize={11}
@@ -1109,20 +1115,20 @@ function BottomArc({
         <g>
           <rect
             x={cx - 40}
-            y={88}
+            y={68}
             width={80}
-            height={40}
+            height={32}
             fill="rgba(0,0,0,0.88)"
             stroke="rgba(255,255,255,0.07)"
             strokeWidth={0.75}
-            rx={14}
+            rx={12}
           />
           <text
             x={cx}
-            y={112}
+            y={90}
             textAnchor="middle"
             fill="white"
-            fontSize={24}
+            fontSize={21}
             fontWeight="bold"
             fontFamily="sans-serif"
           >
@@ -1132,7 +1138,7 @@ function BottomArc({
 
         <g>
           <text
-            x={445}
+            x={428}
             y={11}
             textAnchor="middle"
             fill="rgba(255,255,255,0.75)"
@@ -1143,9 +1149,9 @@ function BottomArc({
           >
             G
           </text>
-          <rect x={415} y={14} width={60} height={34} fill="rgba(0,0,0,0.72)" rx={5} />
+          <rect x={398} y={14} width={60} height={34} fill="rgba(0,0,0,0.72)" rx={5} />
           <text
-            x={445}
+            x={428}
             y={40}
             textAnchor="middle"
             fill={hasG ? gTextColor : 'white'}
@@ -1158,7 +1164,7 @@ function BottomArc({
           {hasG && telemetry.imuPeak.g > 0.05 && (
             <g>
               <text
-                x={502}
+                x={488}
                 y={11}
                 textAnchor="middle"
                 fill="rgba(255,170,0,0.85)"
@@ -1169,9 +1175,9 @@ function BottomArc({
               >
                 MAX
               </text>
-              <rect x={478} y={14} width={48} height={23} fill="rgba(0,0,0,0.65)" rx={5} />
+              <rect x={464} y={14} width={48} height={23} fill="rgba(0,0,0,0.65)" rx={5} />
               <text
-                x={502}
+                x={488}
                 y={30}
                 textAnchor="middle"
                 fill="rgba(255,170,0,0.92)"
@@ -1188,7 +1194,7 @@ function BottomArc({
         <rect
           x={0}
           y={0}
-          width={165}
+          width={210}
           height={h}
           fill="transparent"
           style={{ cursor: 'pointer' }}
@@ -1197,7 +1203,7 @@ function BottomArc({
         <rect
           x={390}
           y={0}
-          width={175}
+          width={196}
           height={h}
           fill="transparent"
           style={{ cursor: 'pointer' }}
@@ -1207,16 +1213,16 @@ function BottomArc({
           x={165}
           y={0}
           width={225}
-          height={78}
+          height={68}
           fill="transparent"
           style={{ cursor: 'pointer' }}
           onClick={() => actions.openMetric('pitchAngle')}
         />
         <rect
           x={165}
-          y={78}
+          y={68}
           width={225}
-          height={h - 78}
+          height={h - 68}
           fill="transparent"
           style={{ cursor: 'pointer' }}
           onClick={() => actions.openMetric('leanAngle')}
@@ -2259,6 +2265,7 @@ function MetricGraph({
   dataRef: React.MutableRefObject<Record<MetricKey, DataPoint[]>>
   actions: MotoActions
 }) {
+  const navigate = useNavigate()
   const topPanel = GPS_KEYS.includes(metricKey)
     ? 'gps'
     : IMU_KEYS.includes(metricKey)
@@ -2268,6 +2275,7 @@ function MetricGraph({
         : null
   const keys: MetricKey[] = metricKey === 'ambientTemp' ? ['ambientTemp', 'piTemp'] : [metricKey]
   const compact = topPanel !== null || keys.length > 1
+  const showSettingsShortcut = metricKey === 'ambientTemp'
   const [nowMs, setNowMs] = React.useState(() => Date.now())
   const [confirmQuit, setConfirmQuit] = React.useState(false)
   const closeHoldRef = React.useRef<{ timer: number | null; fired: boolean }>({
@@ -2313,6 +2321,11 @@ function MetricGraph({
     }
   }
 
+  const openSettings = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    navigate('/settings', { replace: true })
+  }
+
   return (
     <div
       data-testid="projection-metric-graph"
@@ -2344,6 +2357,19 @@ function MetricGraph({
         {'\u2715'}
       </button>
 
+      {showSettingsShortcut && (
+        <button
+          type="button"
+          aria-label="Open settings from graph"
+          data-testid="projection-graph-settings-button"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={openSettings}
+          style={graphSettingsBtn}
+        >
+          <SettingsOutlinedIcon style={{ fontSize: 27 }} />
+        </button>
+      )}
+
       {topPanel === 'gps' && <GpsSkyPanel telemetry={telemetry} />}
       {topPanel === 'imu' && (
         <RideDynamicsPanel telemetry={telemetry} settings={settings} actions={actions} />
@@ -2357,6 +2383,7 @@ function MetricGraph({
           nowMs={nowMs}
           compact={compact}
           first={topPanel === null && index === 0}
+          reserveLeadingAction={showSettingsShortcut && index === 0}
           dataRef={dataRef}
           actions={actions}
         />
@@ -2419,6 +2446,7 @@ function GraphPane({
   nowMs,
   compact,
   first,
+  reserveLeadingAction,
   dataRef,
   actions
 }: {
@@ -2426,6 +2454,7 @@ function GraphPane({
   nowMs: number
   compact: boolean
   first: boolean
+  reserveLeadingAction?: boolean
   dataRef: React.MutableRefObject<Record<MetricKey, DataPoint[]>>
   actions: MotoActions
 }) {
@@ -2518,7 +2547,7 @@ function GraphPane({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: first ? '12px 70px 0 14px' : '8px 14px 0',
+          padding: first ? `12px 70px 0 ${reserveLeadingAction ? 70 : 14}px` : '8px 14px 0',
           flexShrink: 0
         }}
       >
@@ -2857,11 +2886,11 @@ function GraphPane({
 }
 
 export function motoGraphPaneGeometry(compact: boolean) {
-  const svgW = 565
+  const svgW = MOTO_CENTER_SQUARE_SIZE
   const cx = 58
   const cy = 8
   const cw = svgW - cx - 10
-  const ch = compact ? 168 : 358
+  const ch = compact ? 176 : 382
   const svgH = cy + ch + (compact ? 38 : 64)
   return { svgW, svgH, cx, cy, cw, ch }
 }
@@ -2901,6 +2930,26 @@ const closeBtn: React.CSSProperties = {
   flexShrink: 0
 }
 
+const graphSettingsBtn: React.CSSProperties = {
+  position: 'absolute',
+  top: 10,
+  left: 12,
+  zIndex: 20,
+  width: 48,
+  height: 48,
+  borderRadius: 12,
+  border: '2px solid rgba(255,255,255,0.22)',
+  background: 'rgba(255,255,255,0.07)',
+  color: 'white',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  cursor: 'pointer',
+  touchAction: 'manipulation',
+  WebkitTapHighlightColor: 'transparent'
+}
+
 export function ProjectionSensorOverlay() {
   const settings = useLiviStore((s) => s.settings)
   const backdropSampleColor = useLiviStore((s) => s.backdropSampleColor)
@@ -2910,11 +2959,11 @@ export function ProjectionSensorOverlay() {
   const blurBackdropActive =
     motoSettings?.backdropEnabled === true && motoSettings.backdropMode === 'blur'
   const arcBackground = motoSettings
-    ? (blurBackdropActive
-        ? 'transparent'
-        : ((motoSettings.backdropEnabled === true
-            ? (backdropSampleColor ?? motoFillHex(motoSettings))
-            : motoFillHex(motoSettings)) ?? 'transparent'))
+    ? blurBackdropActive
+      ? 'transparent'
+      : ((motoSettings.backdropEnabled === true
+          ? (backdropSampleColor ?? motoFillHex(motoSettings))
+          : motoFillHex(motoSettings)) ?? 'transparent')
     : 'transparent'
 
   React.useEffect(() => {

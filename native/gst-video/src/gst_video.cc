@@ -719,7 +719,10 @@ static std::string dynamic_backdrop_pipeline_desc(const std::string& codec, cons
     ",height=" + std::to_string(dh) + " ! ";
 
   std::string backdrop_zoom = crop_chain(zoom_l, zoom_t, zoom_l, zoom_t);
-  std::string view_crop = crop_chain(vl, vt, vr, vb);
+  // The CarPlay frame can expose a 1px dark gutter on the right edge of the visible
+  // safe area. Shave that source column before scaling into the unchanged view box.
+  int fg_vr = view_w > 4 ? clamp_i(vr + 1, 0, std::max(0, dw - vl - 2)) : vr;
+  std::string view_crop = crop_chain(vl, vt, fg_vr, vb);
   std::string foreground_mask;
 #ifdef __linux__
   foreground_mask =

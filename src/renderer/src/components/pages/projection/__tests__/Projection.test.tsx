@@ -287,10 +287,10 @@ describe('Projection page', () => {
 
     const graph = screen.getByTestId('projection-metric-graph')
     expect(graph).toHaveStyle({
-      top: '14.625%',
-      left: '14.625%',
-      width: '70.625%',
-      height: '70.625%',
+      top: '13.375%',
+      left: '13.375%',
+      width: '73.25%',
+      height: '73.25%',
       borderRadius: '38px',
       overflow: 'hidden'
     })
@@ -305,22 +305,22 @@ describe('Projection page', () => {
     expect(screen.queryByTestId('projection-metric-graph')).not.toBeInTheDocument()
   })
 
-  test('uses the original round dashboard graph geometry', async () => {
+  test('uses the approved round dashboard graph geometry', async () => {
     expect(motoGraphPaneGeometry(true)).toEqual({
-      svgW: 565,
-      svgH: 214,
+      svgW: 586,
+      svgH: 222,
       cx: 58,
       cy: 8,
-      cw: 497,
-      ch: 168
+      cw: 518,
+      ch: 176
     })
     expect(motoGraphPaneGeometry(false)).toEqual({
-      svgW: 565,
-      svgH: 430,
+      svgW: 586,
+      svgH: 454,
       cx: 58,
       cy: 8,
-      cw: 497,
-      ch: 358
+      cw: 518,
+      ch: 382
     })
 
     render(<Projection {...baseProps()} />)
@@ -333,13 +333,13 @@ describe('Projection page', () => {
 
     expect(screen.getByTestId('projection-metric-graph-chart-speed')).toHaveAttribute(
       'viewBox',
-      '0 0 565 214'
+      '0 0 586 222'
     )
     expect(screen.getByTestId('projection-metric-graph-plot-speed')).toHaveAttribute('x', '58')
-    expect(screen.getByTestId('projection-metric-graph-plot-speed')).toHaveAttribute('width', '497')
+    expect(screen.getByTestId('projection-metric-graph-plot-speed')).toHaveAttribute('width', '518')
     expect(screen.getByTestId('projection-metric-graph-plot-speed')).toHaveAttribute(
       'height',
-      '168'
+      '176'
     )
   })
 
@@ -513,6 +513,11 @@ describe('Projection page', () => {
     expect(graph).toHaveTextContent('AMBIENT')
     expect(graph).toHaveTextContent('PI CPU')
     expect(graph).toHaveTextContent('\u25cf LIVE')
+
+    const settingsButton = screen.getByLabelText('Open settings from graph')
+    expect(settingsButton).toBeInTheDocument()
+    fireEvent.click(settingsButton)
+    expect(navigateMock).toHaveBeenCalledWith('/settings', { replace: true })
   })
 
   test('resets only the selected pane in the ambient split graph', async () => {
@@ -581,10 +586,10 @@ describe('Projection page', () => {
               ...baseProps().settings,
               projectionWidth: 800,
               projectionHeight: 800,
-              projectionViewAreaTop: 118,
-              projectionViewAreaBottom: 118,
-              projectionViewAreaLeft: 118,
-              projectionViewAreaRight: 118
+              projectionViewAreaTop: 107,
+              projectionViewAreaBottom: 107,
+              projectionViewAreaLeft: 107,
+              projectionViewAreaRight: 107
             }
           })}
         />
@@ -593,10 +598,10 @@ describe('Projection page', () => {
       const pane = screen.getByTestId('projection-waiting-pane')
 
       expect(pane).toHaveStyle({
-        left: '14.625%',
-        top: '14.625%',
-        width: '70.625%',
-        height: '70.625%',
+        left: '13.375%',
+        top: '13.375%',
+        width: '73.25%',
+        height: '73.25%',
         backgroundColor: '#02050a'
       })
       expect(screen.getByTestId('projection-waiting-clock')).toHaveTextContent('5:07')
@@ -669,10 +674,10 @@ describe('Projection page', () => {
             ...baseProps().settings,
             projectionWidth: 800,
             projectionHeight: 800,
-            projectionViewAreaTop: 118,
-            projectionViewAreaBottom: 118,
-            projectionViewAreaLeft: 118,
-            projectionViewAreaRight: 118,
+            projectionViewAreaTop: 107,
+            projectionViewAreaBottom: 107,
+            projectionViewAreaLeft: 107,
+            projectionViewAreaRight: 107,
             ambientFillEnabled: true,
             ambientFillColor: '#20364a',
             roundedCornerMaskEnabled: true
@@ -686,8 +691,8 @@ describe('Projection page', () => {
       backgroundColor: '#20364a'
     })
     expect(screen.getByTestId('view-area-corner-mask-top-left')).toHaveStyle({
-      top: '14.75%',
-      left: '14.75%'
+      top: '13.375%',
+      left: '13.375%'
     })
     expect(screen.getByTestId('view-area-corner-mask-top-left').style.background).toContain(
       '#20364a'
@@ -705,10 +710,10 @@ describe('Projection page', () => {
             ...baseProps().settings,
             projectionWidth: 800,
             projectionHeight: 800,
-            projectionViewAreaTop: 118,
-            projectionViewAreaBottom: 118,
-            projectionViewAreaLeft: 118,
-            projectionViewAreaRight: 118,
+            projectionViewAreaTop: 107,
+            projectionViewAreaBottom: 107,
+            projectionViewAreaLeft: 107,
+            projectionViewAreaRight: 107,
             backdropEnabled: true,
             ambientFillColor: '#20364a',
             roundedCornerMaskEnabled: true
@@ -737,10 +742,10 @@ describe('Projection page', () => {
             ...baseProps().settings,
             projectionWidth: 800,
             projectionHeight: 800,
-            projectionViewAreaTop: 118,
-            projectionViewAreaBottom: 118,
-            projectionViewAreaLeft: 118,
-            projectionViewAreaRight: 118,
+            projectionViewAreaTop: 107,
+            projectionViewAreaBottom: 107,
+            projectionViewAreaLeft: 107,
+            projectionViewAreaRight: 107,
             backdropEnabled: true,
             backdropMode: 'blur',
             ambientFillColor: '#20364a',

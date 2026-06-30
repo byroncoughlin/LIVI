@@ -104,6 +104,9 @@ declare global {
     memUsedMb?: number | null
     memTotalMb?: number | null
     memPct?: number | null
+    diskFreeMb?: number | null
+    diskTotalMb?: number | null
+    diskPct?: number | null
     swapUsedMb?: number | null
     tempC?: number | null
     load?: number[] | null
