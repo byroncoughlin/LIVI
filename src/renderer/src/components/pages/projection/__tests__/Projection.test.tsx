@@ -1016,6 +1016,66 @@ describe('Projection page', () => {
     expect(liviState.resetInfo).toHaveBeenCalled()
   })
 
+  test('usb box disconnect surfaces an adapter-disconnected status notice', async () => {
+    statusState.isStreaming = false
+
+    render(<Projection {...baseProps({ receivingVideo: false })} />)
+
+    await act(async () => {
+      await usbCb?.(null, { type: 'unplugged' })
+    })
+
+    const notice = screen.getByTestId('projection-waiting-status-notice')
+    expect(notice).toHaveTextContent('Adapter disconnected')
+    expect(notice).toHaveTextContent('Check the dongle')
+  })
+
+  test('usb box disconnect calls out low power when a dip is reported', async () => {
+    statusState.isStreaming = false
+    ;(window as any).app.systemStats = jest.fn().mockResolvedValue({
+      power: { underVoltageNow: true, inputVolts: 4.6 }
+    })
+
+    render(<Projection {...baseProps({ receivingVideo: false })} />)
+
+    await act(async () => {
+      await usbCb?.(null, { type: 'unplugged' })
+    })
+
+    const notice = screen.getByTestId('projection-waiting-status-notice')
+    expect(notice).toHaveTextContent('Adapter disconnected')
+    expect(notice).toHaveTextContent('Low input power')
+  })
+
+  test('phone-only unplug over the projection channel shows no disconnect notice', () => {
+    statusState.isStreaming = false
+
+    render(<Projection {...baseProps({ receivingVideo: false })} />)
+
+    act(() => {
+      onEventCb?.(null, { type: 'unplugged' })
+    })
+
+    expect(screen.queryByTestId('projection-waiting-status-notice')).not.toBeInTheDocument()
+  })
+
+  test('a returning adapter clears the disconnect notice', async () => {
+    statusState.isStreaming = false
+
+    render(<Projection {...baseProps({ receivingVideo: false })} />)
+
+    await act(async () => {
+      await usbCb?.(null, { type: 'unplugged' })
+    })
+    expect(screen.getByTestId('projection-waiting-status-notice')).toBeInTheDocument()
+
+    await act(async () => {
+      await usbCb?.(null, { type: 'plugged' })
+    })
+
+    expect(screen.queryByTestId('projection-waiting-status-notice')).not.toBeInTheDocument()
+  })
+
   test('forces video hidden when streaming becomes false', () => {
     const setReceivingVideo = jest.fn()
 

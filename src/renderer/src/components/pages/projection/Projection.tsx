@@ -35,6 +35,18 @@ const waitingClockLabel = (date: Date): string => {
 
 type WaitingPowerInfo = { text: string; tone: string } | null
 
+// A transient status note surfaced on the waiting pane so the rider knows what
+// just happened (e.g. the adapter dropped off USB — usually a power/wiring dip)
+// versus the routine "phone left" case, which is silent.
+type WaitingStatusNotice = {
+  id: number
+  tone: string
+  title: string
+  detail: string
+} | null
+
+const STATUS_NOTICE_TTL_MS = 14_000
+
 const describeWaitingPower = (power: PowerStatus | null | undefined): WaitingPowerInfo => {
   if (!power) return null
   const volts =
@@ -134,6 +146,7 @@ type WaitingProjectionPaneProps = {
   adapterFound: boolean
   phoneLinked: boolean
   videoStarting: boolean
+  statusNotice: WaitingStatusNotice
   onOpenSettings: () => void
 }
 
@@ -143,6 +156,7 @@ function WaitingProjectionPane({
   adapterFound,
   phoneLinked,
   videoStarting,
+  statusNotice,
   onOpenSettings
 }: WaitingProjectionPaneProps) {
   const [now, setNow] = useState(() => new Date())
@@ -409,6 +423,71 @@ function WaitingProjectionPane({
             'projection-waiting-phone-pill'
           )}
         </div>
+        {statusNotice && (
+          <div
+            role="status"
+            data-testid="projection-waiting-status-notice"
+            data-tone={statusNotice.tone}
+            style={{
+              marginTop: 20,
+              maxWidth: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
+              padding: '10px 16px',
+              borderRadius: 12,
+              border: `1px solid ${statusNotice.tone}66`,
+              background: `${statusNotice.tone}1f`,
+              animation: 'livi-status-notice-in 220ms ease-out'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                color: statusNotice.tone,
+                fontSize: 13,
+                fontWeight: 900,
+                fontFamily: 'monospace',
+                letterSpacing: 1.5,
+                textTransform: 'uppercase'
+              }}
+            >
+              <span
+                style={{
+                  width: 9,
+                  height: 9,
+                  borderRadius: '50%',
+                  background: statusNotice.tone,
+                  boxShadow: `0 0 12px ${statusNotice.tone}aa`,
+                  flex: '0 0 auto'
+                }}
+              />
+              {statusNotice.title}
+            </div>
+            <div
+              style={{
+                color: 'rgba(255,255,255,0.78)',
+                fontSize: 11.5,
+                fontWeight: 700,
+                fontFamily: 'monospace',
+                letterSpacing: 0.5,
+                textAlign: 'center',
+                lineHeight: 1.35
+              }}
+            >
+              {statusNotice.detail}
+            </div>
+            <style>
+              {`@keyframes livi-status-notice-in {
+                  from { opacity: 0; transform: translateY(-6px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }`}
+            </style>
+          </div>
+        )}
         {(videoStarting || phoneLinked) && (
           <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <ConnectingDots tone={status.accentTone} />
@@ -692,6 +771,9 @@ const CarplayComponent: React.FC<CarplayProps> = ({
   const hasStartedRef = useRef(false)
   const [rendererError] = useState<string | null>(null)
   const [projectionSessionActive, setProjectionSessionActive] = useState(false)
+  const [statusNotice, setStatusNotice] = useState<WaitingStatusNotice>(null)
+  const statusNoticeTimerRef = useRef<number | null>(null)
+  const statusNoticeIdRef = useRef(0)
   const [donglePhoneLinked, setDonglePhoneLinkedState] = useState(false)
   const [transportPhoneLinked, setTransportPhoneLinkedState] = useState(false)
   const donglePhoneLinkedRef = useRef(false)
@@ -716,6 +798,33 @@ const CarplayComponent: React.FC<CarplayProps> = ({
     transportPhoneLinkedRef.current = linked
     setTransportPhoneLinkedState(linked)
   }, [])
+
+  const clearStatusNotice = useCallback(() => {
+    if (statusNoticeTimerRef.current != null) {
+      window.clearTimeout(statusNoticeTimerRef.current)
+      statusNoticeTimerRef.current = null
+    }
+    setStatusNotice(null)
+  }, [])
+
+  const pushStatusNotice = useCallback(
+    (notice: { tone: string; title: string; detail: string }) => {
+      if (statusNoticeTimerRef.current != null) {
+        window.clearTimeout(statusNoticeTimerRef.current)
+        statusNoticeTimerRef.current = null
+      }
+      const id = ++statusNoticeIdRef.current
+      setStatusNotice({ id, ...notice })
+      const isJsdom =
+        typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('jsdom')
+      if (isJsdom) return
+      statusNoticeTimerRef.current = window.setTimeout(() => {
+        statusNoticeTimerRef.current = null
+        setStatusNotice((current) => (current && current.id === id ? null : current))
+      }, STATUS_NOTICE_TTL_MS)
+    },
+    []
+  )
 
   const applyTransportPhoneState = useCallback(
     (state: unknown) => {
@@ -988,6 +1097,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
 
         setDongleConnected(true)
         hasStartedRef.current = true
+        clearStatusNotice()
       }
     }
 
@@ -1000,6 +1110,28 @@ const CarplayComponent: React.FC<CarplayProps> = ({
       setDonglePhoneLinked(false)
       hasStartedRef.current = false
       resetInfo()
+
+      // The adapter itself dropped off USB. This is NOT a normal "phone left"
+      // (that arrives over the projection channel as 'unplugged'); it usually
+      // means the box lost power/connection. Surface a transient notice, and if
+      // a power dip is visible, call that out specifically.
+      let detail = 'Adapter dropped off USB. Check the dongle cable/connection.'
+      let tone = '#ef5350'
+      try {
+        const stats = await window.app?.systemStats?.()
+        const power = stats?.power
+        if (power?.underVoltageNow || power?.underVoltageOccurred) {
+          detail = 'Low input power detected when the adapter dropped — check 12V/USB power.'
+          tone = '#ff7043'
+        } else if (power?.throttledNow || power?.throttledOccurred) {
+          detail = 'Power throttling seen when the adapter dropped — check 12V/USB power.'
+          tone = '#ff7043'
+        }
+      } catch {
+        // keep the generic message if the power sample is unavailable
+      }
+      pushStatusNotice({ tone, title: 'Adapter disconnected', detail })
+
       await window.projection.ipc.stop()
     }
     const usbHandler = (_evt: unknown, ...args: unknown[]) => {
@@ -1024,7 +1156,9 @@ const CarplayComponent: React.FC<CarplayProps> = ({
     navigate,
     resetInfo,
     setDeviceInfo,
-    setDonglePhoneLinked
+    setDonglePhoneLinked,
+    clearStatusNotice,
+    pushStatusNotice
   ])
 
   // Settings/events from main
@@ -1389,6 +1523,11 @@ const CarplayComponent: React.FC<CarplayProps> = ({
         retryTimeoutRef.current = null
       }
 
+      if (statusNoticeTimerRef.current != null) {
+        window.clearTimeout(statusNoticeTimerRef.current)
+        statusNoticeTimerRef.current = null
+      }
+
       carplayWorker.terminate()
     }
   }, [carplayWorker])
@@ -1397,6 +1536,11 @@ const CarplayComponent: React.FC<CarplayProps> = ({
   useEffect(() => {
     if (!isStreaming) setReceivingVideo(false)
   }, [isStreaming, setReceivingVideo])
+
+  // Clear any lingering disconnect notice once video is back.
+  useEffect(() => {
+    if (isStreaming) clearStatusNotice()
+  }, [isStreaming, clearStatusNotice])
 
   /* ------------------------------- UI binding ------------------------------ */
 
@@ -1470,6 +1614,7 @@ const CarplayComponent: React.FC<CarplayProps> = ({
           adapterFound={isDongleConnected}
           phoneLinked={phoneLinked}
           videoStarting={waitingVideoStarting}
+          statusNotice={statusNotice}
           onOpenSettings={gotoHostUI}
         />
       )}
